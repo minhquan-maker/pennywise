@@ -11,6 +11,7 @@ import { TransactionsPage } from '@/pages/TransactionsPage'
 import { BudgetPage } from '@/pages/BudgetPage'
 import { AnalyticsPage } from '@/pages/AnalyticsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
+import { AboutPage } from '@/pages/AboutPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -47,6 +48,7 @@ function AppRoutes() {
         <Route path="/budget"       element={<ProtectedRoute><BudgetPage /></ProtectedRoute>} />
         <Route path="/analytics"    element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
         <Route path="/settings"     element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+        <Route path="/about"       element={<AboutPage />} />
         <Route path="/" element={token ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
         <Route path="*"            element={<Navigate to="/dashboard" replace />} />
       </Routes>

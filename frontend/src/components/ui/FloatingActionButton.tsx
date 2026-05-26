@@ -15,8 +15,8 @@ export function FloatingActionButton({ onClick, label = 'Add Transaction' }: Flo
       className={cn(
         'fixed bottom-6 right-6 z-40',
         'w-14 h-14 rounded-full',
-        'bg-gradient-to-br from-primary-500 to-primary-600',
-        'text-white',
+        'bg-primary-500',
+        'text-[#0A0A0A]',
         'shadow-lg shadow-primary-500/30',
         'flex items-center justify-center',
         'transition-all duration-200',

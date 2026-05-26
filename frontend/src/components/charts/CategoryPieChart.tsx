@@ -31,15 +31,15 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
             </Pie>
             <Tooltip
               formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Spent']}
-              contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+              contentStyle={{ borderRadius: 8, backgroundColor: '#171717', border: '1px solid #262626', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', color: '#fff' }}
             />
           </PieChart>
         </ResponsiveContainer>
 
         {/* Center donut label */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-2xl font-bold text-[#0f172a]">${total.toFixed(2)}</span>
-          <span className="text-xs text-[#94a3b8]">Total</span>
+          <span className="text-2xl font-bold text-white">${total.toFixed(2)}</span>
+          <span className="text-xs text-text-tertiary">Total</span>
         </div>
       </div>
 
@@ -48,13 +48,13 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
         {data.map((entry, index) => {
           const pct = total > 0 ? ((entry.value / total) * 100).toFixed(0) : '0'
           return (
-            <div key={`legend-${index}`} className="flex items-center gap-1.5 text-xs text-[#475569]">
+            <div key={`legend-${index}`} className="flex items-center gap-1.5 text-xs text-text-secondary">
               <span
                 className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                 style={{ backgroundColor: entry.color }}
               />
               <span>{entry.name}</span>
-              <span className="text-[#94a3b8] font-medium">{pct}%</span>
+              <span className="text-text-tertiary font-medium">{pct}%</span>
             </div>
           )
         })}

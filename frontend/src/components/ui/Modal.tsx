@@ -49,27 +49,27 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md' }:
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
+        className="fixed inset-0 bg-black/80 backdrop-blur-sm animate-fade-in"
         onClick={onClose}
       />
 
       {/* Panel */}
       <div
         className={cn(
-          'relative w-full bg-surface-0 rounded-2xl shadow-xl border border-surface-border',
+          'relative w-full bg-[#171717] rounded-2xl shadow-xl border border-[#262626]',
           'animate-scale-in',
           'max-h-[90vh] overflow-y-auto',
           sizeClasses[size]
         )}
       >
         {title && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-surface-100">
-            <h2 id="modal-title" className="text-lg font-semibold text-text-primary">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-[#262626]">
+            <h2 id="modal-title" className="text-lg font-semibold text-white">
               {title}
             </h2>
             <button
               onClick={onClose}
-              className="text-text-tertiary hover:text-text-primary transition-colors rounded-lg p-1 hover:bg-surface-100"
+              className="text-text-tertiary hover:text-white transition-colors rounded-lg p-1 hover:bg-neutral-800"
             >
               <X className="h-5 w-5" />
             </button>
@@ -79,7 +79,7 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md' }:
         <div className="px-6 py-5">{children}</div>
 
         {footer && (
-          <div className="px-6 py-4 border-t border-surface-100 bg-surface-50 rounded-b-2xl">
+          <div className="px-6 py-4 border-t border-[#262626] bg-[#0A0A0A] rounded-b-2xl">
             {footer}
           </div>
         )}

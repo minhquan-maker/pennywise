@@ -4,7 +4,7 @@ interface TrendLineChartProps {
   data: { month: string; total: number }[]
 }
 
-const axisStyle = { fontSize: 12, fill: '#94a3b8' }
+const axisStyle = { fontSize: 12, fill: '#a3a3a3' }
 
 function formatMonth(monthStr: string) {
   const [year, m] = monthStr.split('-')
@@ -22,15 +22,15 @@ export function TrendLineChart({ data }: TrendLineChartProps) {
       <LineChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="trendGradient" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#3b82f6" />
-            <stop offset="100%" stopColor="#8b5cf6" />
+            <stop offset="0%" stopColor="#BFFF00" />
+            <stop offset="100%" stopColor="#80CC00" />
           </linearGradient>
           <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.15} />
-            <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+            <stop offset="0%" stopColor="#BFFF00" stopOpacity={0.15} />
+            <stop offset="100%" stopColor="#BFFF00" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#e5e7eb" />
+        <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#262626" />
         <XAxis
           dataKey="month"
           tickFormatter={(v) => formatMonth(String(v))}
@@ -47,7 +47,7 @@ export function TrendLineChart({ data }: TrendLineChartProps) {
         <Tooltip
           formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Total']}
           labelFormatter={(label) => formatMonth(String(label))}
-          contentStyle={{ border: 'none', borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+          contentStyle={{ backgroundColor: '#171717', border: '1px solid #262626', borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.3)', color: '#fff' }}
         />
         <Area
           type="monotone"
@@ -61,8 +61,8 @@ export function TrendLineChart({ data }: TrendLineChartProps) {
           dataKey="total"
           stroke="url(#trendGradient)"
           strokeWidth={2.5}
-          dot={{ r: 4, fill: '#3b82f6', strokeWidth: 0 }}
-          activeDot={{ r: 6, fill: '#3b82f6', strokeWidth: 0 }}
+          dot={{ r: 4, fill: '#BFFF00', strokeWidth: 0 }}
+          activeDot={{ r: 6, fill: '#BFFF00', strokeWidth: 0 }}
           isAnimationActive={true}
           animationDuration={1000}
         />

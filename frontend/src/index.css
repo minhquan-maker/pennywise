@@ -1,17 +1,17 @@
 @import "tailwindcss";
 
 @theme {
-  /* Primary — bold blue scale (Wix-inspired) */
-  --color-primary-50: #eff6ff;
-  --color-primary-100: #dbeafe;
-  --color-primary-200: #bfdbfe;
-  --color-primary-300: #93c5fd;
-  --color-primary-400: #60a5fa;
-  --color-primary-500: #3b82f6;
-  --color-primary-600: #1d4ed8;
-  --color-primary-700: #1e40af;
-  --color-primary-800: #1e3a8a;
-  --color-primary-900: #172554;
+  /* Primary — lime green scale (matching landing page) */
+  --color-primary-50: #f0ffd6;
+  --color-primary-100: #dfffb3;
+  --color-primary-200: #c8ff80;
+  --color-primary-300: #b3ff4d;
+  --color-primary-400: #bfff00;
+  --color-primary-500: #BFFF00;
+  --color-primary-600: #ADFF00;
+  --color-primary-700: #99e600;
+  --color-primary-800: #80cc00;
+  --color-primary-900: #4d7a00;
 
   /* Violet accent */
   --color-violet-50: #f5f3ff;
@@ -47,10 +47,17 @@
   --color-surface-200: #e5e7eb;
   --color-surface-border: #e5e7eb;
 
+  /* App dark theme */
+  --color-bg: #0A0A0A;
+  --color-surface-dark: #171717;
+  --color-border-dark: #262626;
+  --color-accent: #BFFF00;
+  --color-accent-hover: #ADFF00;
+
   /* Text (Wix-inspired — strong contrast) */
-  --color-text-primary: #111827;
-  --color-text-secondary: #6b7280;
-  --color-text-tertiary: #9ca3af;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #a3a3a3;
+  --color-text-tertiary: #737373;
   --color-text-inverse: #ffffff;
 
   /* Shadows (refined, subtle) */
@@ -88,7 +95,7 @@
 
   body {
     font-family: var(--font-sans);
-    background-color: var(--color-surface-50);
+    background-color: var(--color-bg);
     color: var(--color-text-primary);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -203,7 +210,7 @@
   /* Primary — bold Wix-style */
   .btn-primary {
     background-color: var(--color-primary-600);
-    color: white;
+    color: #0A0A0A;
     font-weight: 600;
   }
   .btn-primary:hover:not(:disabled) { background-color: var(--color-primary-700); }
@@ -213,7 +220,7 @@
     background-color: var(--color-surface-100);
     color: var(--color-text-secondary);
   }
-  .btn-secondary:hover:not(:disabled) { background-color: var(--color-surface-200); }
+  .btn-secondary:hover:not(:disabled) { background-color: var(--color-neutral-800); color: var(--color-text-primary); }
 
   /* Danger */
   .btn-danger {
@@ -228,19 +235,20 @@
     color: var(--color-text-secondary);
   }
   .btn-ghost:hover:not(:disabled) {
-    background-color: var(--color-surface-100);
+    background-color: var(--color-neutral-800);
     color: var(--color-text-primary);
   }
 
   /* Gradient */
   .btn-gradient {
-    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
-    color: white;
-    box-shadow: 0 1px 3px rgba(59, 130, 246, 0.35);
+    background: linear-gradient(135deg, var(--color-primary-400), var(--color-primary-600));
+    color: #0A0A0A;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(191, 255, 0, 0.3);
   }
   .btn-gradient:hover:not(:disabled) {
-    background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-700));
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700));
+    box-shadow: 0 4px 12px rgba(191, 255, 0, 0.4);
   }
 
   /* Outline */
@@ -250,32 +258,32 @@
     color: var(--color-text-secondary);
   }
   .btn-outline:hover:not(:disabled) {
-    border-color: var(--color-primary-300);
-    color: var(--color-primary-600);
+    border-color: var(--color-primary-400);
+    color: var(--color-primary-500);
     background: var(--color-primary-50);
   }
 
   /* Soft */
   .btn-soft {
     background: var(--color-primary-50);
-    color: var(--color-primary-600);
+    color: var(--color-primary-700);
   }
   .btn-soft:hover:not(:disabled) { background: var(--color-primary-100); }
 
-  /* CTA — Wix-style prominent */
+  /* CTA — prominent */
   .btn-cta {
-    background-color: var(--color-primary-600);
-    color: white;
+    background-color: var(--color-primary-500);
+    color: #0A0A0A;
     font-weight: 700;
     font-size: 1rem;
     padding: 0.875rem 1.75rem;
     border-radius: var(--radius-lg);
-    box-shadow: 0 2px 8px rgba(29, 78, 216, 0.3);
+    box-shadow: 0 2px 8px rgba(191, 255, 0, 0.3);
     letter-spacing: -0.02em;
   }
   .btn-cta:hover:not(:disabled) {
-    background-color: var(--color-primary-700);
-    box-shadow: 0 4px 16px rgba(29, 78, 216, 0.4);
+    background-color: var(--color-primary-600);
+    box-shadow: 0 4px 16px rgba(191, 255, 0, 0.4);
   }
 
   /* Button sizes */

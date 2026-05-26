@@ -31,23 +31,24 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             ref={ref}
             id={selectId}
             className={cn(
-              'block w-full rounded-lg border text-sm text-text-primary appearance-none pr-10',
+              'block w-full rounded-lg border text-sm text-white appearance-none pr-10',
               'transition-all duration-fast',
               variant === 'default' && [
-                'border-surface-border bg-surface-0',
+                'border-[#262626] bg-[#171717]',
                 'focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20',
-                'disabled:cursor-not-allowed disabled:bg-surface-50 disabled:text-text-tertiary',
+                'disabled:cursor-not-allowed disabled:bg-[#0A0A0A] disabled:text-text-tertiary',
               ],
               variant === 'filled' && [
-                'bg-surface-100 border-transparent',
-                'focus:bg-surface-0 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20',
-                'disabled:cursor-not-allowed disabled:bg-surface-200 disabled:text-text-tertiary',
+                'bg-neutral-800 border-transparent',
+                'focus:bg-neutral-800 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20',
+                'disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-text-tertiary',
               ],
               error && 'border-danger-500 focus:border-danger-500 focus:ring-danger-500/20',
               leftIcon && 'ps-10',
               className
             )}
             disabled={loading || props.disabled}
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a3a3a3' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
             {...props}
           >
             {children}

@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/Select'
 import { Modal } from '@/components/ui/Modal'
 import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { toast } from 'sonner'
 import { formatCurrency, getCurrentMonth, formatMonth } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
 import { useCategories, useBudgets, useUpsertBudget, useDeleteBudget, useAISuggestBudget } from '@/hooks/useQueries'
@@ -66,7 +67,11 @@ export function BudgetPage() {
     try {
       const { data } = await aiSuggest.mutateAsync(month)
       const suggestions: { category: string; suggestedBudget: number }[] =
-        data.data!.suggestions || []
+        data.suggestions || []
+      if (suggestions.length === 0) {
+        toast.error('No suggestions returned. Add transactions first for AI to analyze.')
+        return
+      }
       for (const s of suggestions) {
         const cat = categories.find((c) => c.name === s.category)
         if (cat && !existingBudgetCats.has(cat.id)) {
@@ -74,8 +79,9 @@ export function BudgetPage() {
         }
       }
       qc.invalidateQueries({ queryKey: ['budgets'] })
+      toast.success(`AI suggested ${suggestions.length} budget(s) for you!`)
     } catch {
-      // error
+      toast.error('Failed to generate budget suggestions. Check your GROQ_API_KEY.')
     }
   }
 
@@ -84,7 +90,7 @@ export function BudgetPage() {
       {/* Page header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl font-extrabold text-text-primary">Budget</h1>
+          <h1 className="text-3xl font-extrabold text-white">Budget</h1>
           <p className="text-base text-text-secondary mt-1">Manage your monthly spending limits</p>
         </div>
         <div className="flex gap-3">
@@ -98,7 +104,7 @@ export function BudgetPage() {
             AI Suggest
           </Button>
           <Button
-            variant="primary"
+            variant="gradient"
             size="sm"
             icon={<Plus className="h-4 w-4" />}
             onClick={() => setModalOpen(true)}
@@ -109,7 +115,7 @@ export function BudgetPage() {
       </div>
 
       {/* Month selector */}
-      <Card variant="bordered" padding="sm">
+      <Card variant="dark" padding="sm">
         <div className="flex items-center gap-3">
           <label className="text-sm text-text-secondary font-medium">Month</label>
           <Input
@@ -119,7 +125,7 @@ export function BudgetPage() {
             onChange={(e) => setMonth(e.target.value)}
             className="w-44"
           />
-          <span className="text-sm font-medium text-primary-600">{formatMonth(month)}</span>
+          <span className="text-sm font-medium text-primary-400">{formatMonth(month)}</span>
         </div>
       </Card>
 
@@ -127,7 +133,7 @@ export function BudgetPage() {
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} variant="bordered" padding="md">
+            <Card key={i} variant="dark" padding="md">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Skeleton variant="circular" className="w-10 h-10" />
@@ -144,11 +150,11 @@ export function BudgetPage() {
         /* Empty state */
         <Card className="p-12 text-center">
           <div className="flex justify-center mb-4">
-            <div className="p-4 rounded-full bg-surface-50">
+            <div className="p-4 rounded-full bg-neutral-800">
               <Target className="h-8 w-8 text-text-tertiary" />
             </div>
           </div>
-          <p className="text-text-primary font-semibold mb-1">No budgets set</p>
+          <p className="text-white font-semibold mb-1">No budgets set</p>
           <p className="text-sm text-text-secondary mb-1">
             Set a budget to track your spending
           </p>
@@ -177,17 +183,17 @@ export function BudgetPage() {
               ? '#EF4444'
               : isWarn
               ? '#F59E0B'
-              : '#3B82F6'
+              : '#BFFF00'
 
             const statusLabel = isOver ? 'Over budget' : isWarn ? 'Near limit' : 'On track'
 
             return (
-              <Card key={budget.id} variant="bordered" padding="md">
+              <Card key={budget.id} variant="dark" padding="md">
                 {/* Header row */}
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <span className="text-2xl">{budget.category.icon}</span>
-                    <span className="text-sm font-bold text-text-primary">{budget.category.name}</span>
+                    <span className="text-sm font-bold text-white">{budget.category.name}</span>
                   </div>
                   <Button
                     size="sm"
@@ -195,12 +201,12 @@ export function BudgetPage() {
                     iconOnly
                     icon={<X className="h-4 w-4" />}
                     onClick={() => deleteBudget.mutate(budget.id)}
-                    className="!text-text-tertiary hover:!text-danger-500 hover:!bg-danger-50"
+                    className="!text-text-tertiary hover:!text-danger-500 hover:!bg-neutral-800"
                   />
                 </div>
 
                 {/* Progress bar */}
-                <div className="h-2 rounded-full bg-surface-100 overflow-hidden mb-3">
+                <div className="h-2 rounded-full bg-neutral-800 overflow-hidden mb-3">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${
                       isOver ? 'bg-danger-500' : isWarn ? 'bg-warning-500' : 'bg-primary-500'
@@ -262,8 +268,8 @@ export function BudgetPage() {
               value={formCategory}
               onChange={(e) => setFormCategory(e.target.value)}
               required
-              className="w-full h-12 px-4 rounded-xl border border-surface-border bg-surface-0 text-base text-text-primary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all appearance-none pr-10 cursor-pointer"
-              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+              className="w-full h-12 px-4 rounded-xl border border-[#262626] bg-neutral-800 text-base text-white focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all appearance-none pr-10 cursor-pointer"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a3a3a3' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
             >
               <option value="">Select category</option>
               {categories
@@ -285,7 +291,7 @@ export function BudgetPage() {
               onChange={(e) => setFormAmount(e.target.value)}
               placeholder="0.00"
               required
-              className="w-full h-12 px-4 rounded-xl border border-surface-border bg-surface-0 text-base text-text-primary placeholder:text-text-tertiary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all tabular-nums"
+              className="w-full h-12 px-4 rounded-xl border border-[#262626] bg-neutral-800 text-base text-white placeholder:text-text-tertiary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all tabular-nums"
             />
           </div>
         </form>

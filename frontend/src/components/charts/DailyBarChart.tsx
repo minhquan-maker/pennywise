@@ -4,7 +4,7 @@ interface DailyBarChartProps {
   data: { date: string; total: number }[]
 }
 
-const axisStyle = { fontSize: 12, fill: '#94a3b8' }
+const axisStyle = { fontSize: 12, fill: '#a3a3a3' }
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr)
@@ -19,11 +19,11 @@ export function DailyBarChart({ data }: DailyBarChartProps) {
       <BarChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#60a5fa" />
-            <stop offset="100%" stopColor="#3b82f6" />
+            <stop offset="0%" stopColor="#BFFF00" />
+            <stop offset="100%" stopColor="#80CC00" />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#e5e7eb" />
+        <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#262626" />
         <XAxis
           dataKey="date"
           tickFormatter={(v) => formatDate(String(v))}
@@ -40,7 +40,7 @@ export function DailyBarChart({ data }: DailyBarChartProps) {
         <Tooltip
           formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Spent']}
           labelFormatter={(label) => formatDate(String(label))}
-          contentStyle={{ border: 'none', borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+          contentStyle={{ backgroundColor: '#171717', border: '1px solid #262626', borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.3)', color: '#fff' }}
         />
         <Bar
           dataKey="total"

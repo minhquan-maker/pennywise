@@ -30,20 +30,20 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              'block w-full rounded-lg border text-sm text-text-primary',
+              'block w-full rounded-lg border text-sm text-white',
               'placeholder:text-text-tertiary',
               'transition-all duration-fast',
               // Default variant
               variant === 'default' && [
-                'border-surface-border bg-surface-0',
+                'border-[#262626] bg-[#171717]',
                 'focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20',
-                'disabled:cursor-not-allowed disabled:bg-surface-50 disabled:text-text-tertiary',
+                'disabled:cursor-not-allowed disabled:bg-[#0A0A0A] disabled:text-text-tertiary',
               ],
               // Filled variant
               variant === 'filled' && [
-                'bg-surface-100 border-transparent',
-                'focus:bg-surface-0 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20',
-                'disabled:cursor-not-allowed disabled:bg-surface-200 disabled:text-text-tertiary',
+                'bg-[#262626] border-transparent',
+                'focus:bg-[#262626] focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20',
+                'disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-text-tertiary',
               ],
               // Error
               error && 'border-danger-500 focus:border-danger-500 focus:ring-danger-500/20',

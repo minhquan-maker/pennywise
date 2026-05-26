@@ -98,13 +98,13 @@ export function TransactionsPage() {
       {/* Page header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl font-extrabold text-text-primary">Transactions</h1>
+          <h1 className="text-3xl font-extrabold text-white">Transactions</h1>
           <p className="text-base text-text-secondary mt-1">{formatMonth(month)} · {user?.name}</p>
         </div>
         {transactions && (
           <Badge
             label={`${transactions.length} transaction${transactions.length !== 1 ? 's' : ''}`}
-            color="#3B82F6"
+            color="#BFFF00"
             variant="soft"
             size="sm"
           />
@@ -112,14 +112,14 @@ export function TransactionsPage() {
       </div>
 
       {/* Filter bar */}
-      <Card variant="bordered" padding="sm">
+      <Card variant="dark" padding="sm">
         <div className="flex items-center gap-3">
           {/* Search — dominant, clean */}
           <div className="flex-1">
             <input
               type="text"
               placeholder="Search transactions..."
-              className="w-full h-12 pl-4 pr-4 rounded-xl border border-surface-border bg-white text-sm text-text-primary placeholder:text-text-tertiary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
+              className="w-full h-12 pl-4 pr-4 rounded-xl border border-[#262626] bg-neutral-800 text-sm text-white placeholder:text-text-tertiary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
@@ -130,14 +130,14 @@ export function TransactionsPage() {
             max={getCurrentMonth()}
             value={month}
             onChange={e => setMonth(e.target.value)}
-            className="h-12 px-4 rounded-xl border border-surface-border bg-white text-sm text-text-primary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
+            className="h-12 px-4 rounded-xl border border-[#262626] bg-neutral-800 text-sm text-white focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
           />
           {/* Category — clean dropdown, no icon */}
           <select
             value={categoryFilter}
             onChange={e => setCategoryFilter(e.target.value)}
-            className="h-12 px-4 rounded-xl border border-surface-border bg-white text-sm text-text-primary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all appearance-none pr-8"
-            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+            className="h-12 px-4 rounded-xl border border-[#262626] bg-neutral-800 text-sm text-white focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all appearance-none pr-8"
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a3a3a3' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
           >
             <option value="">All Categories</option>
             {categories.map(c => (
@@ -172,10 +172,10 @@ export function TransactionsPage() {
           </div>
         </Card>
       ) : transactions?.length === 0 ? (
-        <Card variant="default" padding="lg">
+        <Card variant="dark" padding="lg">
           <div className="text-center py-16">
             <div className="flex justify-center mb-4">
-              <div className="p-4 rounded-full bg-surface-50">
+              <div className="p-4 rounded-full bg-neutral-800">
                 <svg
                   width="40"
                   height="40"
@@ -192,7 +192,7 @@ export function TransactionsPage() {
                 </svg>
               </div>
             </div>
-            <p className="text-text-primary font-semibold mb-1">No transactions yet</p>
+            <p className="text-white font-semibold mb-1">No transactions yet</p>
             <p className="text-sm text-text-secondary mb-1">
               Start tracking your expenses by adding your first transaction.
             </p>
@@ -202,17 +202,17 @@ export function TransactionsPage() {
           </div>
         </Card>
       ) : (
-        <Card variant="default" padding="none">
+        <Card variant="dark" padding="none">
           {transactions?.map((txn) => {
-            const catColor = txn.category?.color || '#3B82F6'
+            const catColor = txn.category?.color || '#BFFF00'
             return (
               <div
                 key={txn.id}
-                className="flex items-center gap-4 px-5 py-4 hover:bg-surface-50 transition-colors border-b border-surface-border last:border-0 group"
+                className="flex items-center gap-4 px-5 py-4 hover:bg-neutral-800 transition-colors border-b border-[#262626] last:border-0 group"
               >
                 {/* Category dot */}
                 <span
-                  className="w-10 h-10 rounded-xl flex-shrink-0"
+                  className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center"
                   style={{ backgroundColor: `${catColor}1a` }}
                 >
                   <span
@@ -222,7 +222,7 @@ export function TransactionsPage() {
                 </span>
                 {/* Note + date */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-text-primary truncate">
+                  <p className="text-sm font-semibold text-white truncate">
                     {txn.note || txn.category?.name}
                   </p>
                   <p className="text-xs text-text-tertiary">
@@ -230,7 +230,7 @@ export function TransactionsPage() {
                   </p>
                 </div>
                 {/* Amount */}
-                <p className="text-sm font-bold tabular-nums text-text-primary flex-shrink-0">
+                <p className="text-sm font-bold tabular-nums text-white flex-shrink-0">
                   {formatCurrency(txn.amount, currency)}
                 </p>
                 {/* Actions (visible on hover) */}

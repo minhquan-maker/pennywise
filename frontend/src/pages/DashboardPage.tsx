@@ -46,14 +46,14 @@ export function DashboardPage() {
       {/* Hero greeting */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-extrabold text-text-primary leading-tight">
+          <h1 className="text-4xl font-extrabold text-white leading-tight">
             Good morning, {user?.name}
           </h1>
           <p className="text-base text-text-secondary mt-1">
             Your financial snapshot for {formatMonth(month)}
           </p>
         </div>
-        <div className="w-12 h-12 rounded-full bg-primary-600 text-white font-bold flex items-center justify-center text-lg flex-shrink-0">
+        <div className="w-12 h-12 rounded-full bg-primary-500 text-[#0A0A0A] font-bold flex items-center justify-center text-lg flex-shrink-0">
           {initial}
         </div>
       </div>
@@ -61,14 +61,14 @@ export function DashboardPage() {
       {/* Stats row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-stagger">
         {/* Total Spent */}
-        <Card variant="bordered" padding="md">
+        <Card variant="dark" padding="md">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">
-              <Wallet className="w-5 h-5 text-primary-600" />
+            <div className="w-12 h-12 rounded-xl bg-neutral-800 flex items-center justify-center flex-shrink-0">
+              <Wallet className="w-5 h-5 text-primary-400" />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium text-text-secondary">Total Spent</p>
-              <p className="text-3xl font-extrabold tabular-nums text-text-primary mt-0.5">
+              <p className="text-3xl font-extrabold tabular-nums text-white mt-0.5">
                 {formatCurrency(dashboard?.total || 0, currency)}
               </p>
             </div>
@@ -76,24 +76,24 @@ export function DashboardPage() {
         </Card>
 
         {/* vs Last Month */}
-        <Card variant="bordered" padding="md">
+        <Card variant="dark" padding="md">
           <div className="flex items-start gap-4">
             <div
               className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                changePositive ? 'bg-danger-50' : 'bg-success-50'
+                changePositive ? 'bg-neutral-800' : 'bg-neutral-800'
               }`}
             >
               {changePositive ? (
-                <TrendingUp className="w-5 h-5 text-danger-600" />
+                <TrendingUp className="w-5 h-5 text-danger-500" />
               ) : (
-                <TrendingDown className="w-5 h-5 text-success-600" />
+                <TrendingDown className="w-5 h-5 text-primary-400" />
               )}
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium text-text-secondary">vs Last Month</p>
               <p
                 className={`text-3xl font-extrabold tabular-nums mt-0.5 ${
-                  changePositive ? 'text-danger-600' : 'text-success-600'
+                  changePositive ? 'text-danger-500' : 'text-primary-400'
                 }`}
               >
                 {changePositive ? '+' : ''}{dashboard?.changePercent || 0}%
@@ -103,14 +103,14 @@ export function DashboardPage() {
         </Card>
 
         {/* Categories */}
-        <Card variant="bordered" padding="md">
+        <Card variant="dark" padding="md">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-surface-100 flex items-center justify-center flex-shrink-0">
+            <div className="w-12 h-12 rounded-xl bg-neutral-800 flex items-center justify-center flex-shrink-0">
               <Layers className="w-5 h-5 text-text-secondary" />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium text-text-secondary">Categories</p>
-              <p className="text-3xl font-extrabold tabular-nums text-text-primary mt-0.5">
+              <p className="text-3xl font-extrabold tabular-nums text-white mt-0.5">
                 {dashboard?.byCategory.length || 0}
               </p>
             </div>
@@ -120,9 +120,9 @@ export function DashboardPage() {
 
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-stagger">
-        <Card variant="bordered" padding="md">
+        <Card variant="dark" padding="md">
           <Card.Header>
-            <h2 className="text-base font-bold text-text-primary">Spending by Category</h2>
+            <h2 className="text-base font-bold text-white">Spending by Category</h2>
           </Card.Header>
           <Card.Body>
             <CategoryPieChart
@@ -136,9 +136,9 @@ export function DashboardPage() {
           </Card.Body>
         </Card>
 
-        <Card variant="bordered" padding="md">
+        <Card variant="dark" padding="md">
           <Card.Header>
-            <h2 className="text-base font-bold text-text-primary">Last 7 Days</h2>
+            <h2 className="text-base font-bold text-white">Last 7 Days</h2>
           </Card.Header>
           <Card.Body>
             <DailyBarChart data={dashboard?.last7Days || []} />
@@ -147,14 +147,14 @@ export function DashboardPage() {
       </div>
 
       {/* AI Summary */}
-      <Card variant="default" padding="md">
+      <Card variant="dark" padding="md">
         <Card.Header className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-primary-600" />
-            <h2 className="text-lg font-bold text-text-primary">AI Monthly Summary</h2>
+            <Sparkles className="w-4 h-4 text-primary-400" />
+            <h2 className="text-lg font-bold text-white">AI Monthly Summary</h2>
           </div>
           <Button
-            variant="soft"
+            variant="gradient"
             size="sm"
             onClick={fetchAiSummary}
             isLoading={aiLoading}

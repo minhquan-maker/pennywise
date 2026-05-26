@@ -97,7 +97,7 @@ export function TransactionModal({
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder={placeholder}
-              className="w-full h-14 pl-10 pr-4 rounded-xl border border-surface-border bg-surface-0 text-lg font-semibold text-text-primary placeholder:text-text-tertiary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all tabular-nums"
+              className="w-full h-14 pl-10 pr-4 rounded-xl border border-[#262626] bg-[#171717] text-lg font-semibold text-white placeholder:text-text-tertiary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all tabular-nums"
             />
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -109,8 +109,8 @@ export function TransactionModal({
                 className={cn(
                   'px-4 py-2 rounded-full text-sm font-medium transition-all duration-fast',
                   amount === amt.toString()
-                    ? 'bg-primary-500 text-white shadow-sm'
-                    : 'bg-surface-100 text-text-secondary hover:bg-primary-50 hover:text-primary-600'
+                    ? 'bg-primary-500 text-[#0A0A0A] shadow-sm'
+                    : 'bg-neutral-800 text-text-secondary hover:bg-neutral-700 hover:text-white'
                 )}
               >
                 {symbol}{amt}
@@ -131,8 +131,8 @@ export function TransactionModal({
                 className={cn(
                   'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 text-left',
                   categoryId === cat.id
-                    ? 'bg-primary-50 border-2 border-primary-500 text-primary-700'
-                    : 'bg-surface-50 border-2 border-transparent hover:bg-surface-100 text-text-primary'
+                    ? 'bg-primary-50 border-2 border-primary-500 text-[#0A0A0A]'
+                    : 'bg-neutral-800 border-2 border-transparent hover:bg-neutral-700 text-white'
                 )}
               >
                 <span
@@ -156,13 +156,13 @@ export function TransactionModal({
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full h-14 pl-11 pr-4 rounded-xl border border-surface-border bg-surface-0 text-base text-text-primary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:hover:opacity-100 cursor-pointer"
+              className="w-full h-14 pl-11 pr-4 rounded-xl border border-[#262626] bg-[#171717] text-base text-white focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:hover:opacity-100 cursor-pointer"
             />
           </div>
           <button
             type="button"
             onClick={setToday}
-            className="text-xs text-primary-500 hover:text-primary-600 font-medium transition-colors"
+            className="text-xs text-primary-400 hover:text-primary-500 font-medium transition-colors"
           >
             Today
           </button>
@@ -180,7 +180,7 @@ export function TransactionModal({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="What was this for?"
-              className="w-full h-14 pl-11 pr-4 rounded-xl border border-surface-border bg-surface-0 text-base text-text-primary placeholder:text-text-tertiary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
+              className="w-full h-14 pl-11 pr-4 rounded-xl border border-[#262626] bg-[#171717] text-base text-white placeholder:text-text-tertiary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
             />
           </div>
         </div>

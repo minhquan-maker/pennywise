@@ -74,16 +74,16 @@ export function SettingsPage() {
     <div className="max-w-xl mx-auto space-y-6 animate-stagger">
       {/* Page header */}
       <div>
-        <h1 className="text-3xl font-extrabold text-text-primary">Settings</h1>
+        <h1 className="text-3xl font-extrabold text-white">Settings</h1>
         <p className="text-base text-text-secondary mt-1">Manage your account and preferences</p>
       </div>
 
       {/* Profile section */}
-      <Card variant="bordered" padding="lg">
+      <Card variant="dark" padding="lg">
         <Card.Header>
           <div className="flex items-center gap-2">
-            <User className="h-4 w-4 text-primary-500" />
-            <h2 className="text-lg font-bold text-text-primary">Profile</h2>
+            <User className="h-4 w-4 text-primary-400" />
+            <h2 className="text-lg font-bold text-white">Profile</h2>
           </div>
         </Card.Header>
         <div className="space-y-4">
@@ -104,18 +104,18 @@ export function SettingsPage() {
             <option value="USD">USD ($)</option>
             <option value="VND">VND (₫)</option>
           </Select>
-          <Button onClick={handleSave} isLoading={updateMe.isPending} variant="primary">
+          <Button onClick={handleSave} isLoading={updateMe.isPending} variant="gradient">
             Save Changes
           </Button>
         </div>
       </Card>
 
       {/* Data Export section */}
-      <Card variant="bordered" padding="md">
+      <Card variant="dark" padding="md">
         <Card.Header>
           <div className="flex items-center gap-2">
-            <Download className="h-4 w-4 text-primary-500" />
-            <h2 className="text-base font-bold text-text-primary">Export Data</h2>
+            <Download className="h-4 w-4 text-primary-400" />
+            <h2 className="text-base font-bold text-white">Export Data</h2>
           </div>
         </Card.Header>
         <p className="text-sm text-text-secondary mb-3">Download your transaction history</p>
@@ -125,11 +125,11 @@ export function SettingsPage() {
       </Card>
 
       {/* Clear All Data section */}
-      <Card variant="bordered" padding="lg">
+      <Card variant="dark" padding="lg">
         <Card.Header>
           <div className="flex items-center gap-2">
             <Eraser className="h-4 w-4 text-warning-500" />
-            <h2 className="text-base font-bold text-text-primary">Clear All Data</h2>
+            <h2 className="text-base font-bold text-white">Clear All Data</h2>
           </div>
         </Card.Header>
         <p className="text-sm text-text-secondary mb-4">
@@ -142,14 +142,14 @@ export function SettingsPage() {
 
       {/* Danger Zone section */}
       <Card
-        variant="bordered"
+        variant="dark"
         padding="lg"
-        className="border-danger-200"
+        className="border-danger-700"
       >
         <Card.Header>
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-danger-500" />
-            <h2 className="text-base font-bold text-text-primary">Danger Zone</h2>
+            <h2 className="text-base font-bold text-white">Danger Zone</h2>
             <Badge variant="solid" color="#dc2626" label="Danger Zone" size="sm" />
           </div>
         </Card.Header>

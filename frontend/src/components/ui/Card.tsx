@@ -4,16 +4,17 @@ import { cn } from '@/lib/utils'
 interface CardProps {
   children: ReactNode
   className?: string
-  variant?: 'default' | 'elevated' | 'bordered' | 'glass'
+  variant?: 'default' | 'elevated' | 'bordered' | 'glass' | 'dark'
   hover?: boolean
   padding?: 'none' | 'sm' | 'md' | 'lg'
 }
 
 const variantClasses = {
-  default:  'bg-surface-0 border border-surface-border shadow-sm',
-  elevated: 'bg-surface-0 shadow-md border border-surface-100',
-  bordered: 'bg-surface-0 border-2 border-surface-border',
+  default:  'bg-[#171717] border border-[#262626] shadow-sm',
+  elevated: 'bg-[#171717] shadow-md border border-[#262626]',
+  bordered: 'bg-[#171717] border-2 border-[#262626]',
   glass:    'glass-card',
+  dark:     'bg-[#171717] border border-[#262626]',
 }
 
 const paddingMap = {
@@ -64,5 +65,5 @@ Card.Body = function CardBody({ children, className }: { children: ReactNode; cl
 }
 
 Card.Footer = function CardFooter({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn('pt-4 border-t border-surface-100 mt-4', className)}>{children}</div>
+  return <div className={cn('pt-4 border-t border-[#262626] mt-4', className)}>{children}</div>
 }
