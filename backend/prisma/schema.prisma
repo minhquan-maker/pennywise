@@ -1,0 +1,61 @@
+// This is your Prisma schema file
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  currency     String   @default("USD")
+  createdAt    DateTime @default(now())
+
+  transactions Transaction[]
+  categories   Category[]
+  budgets      Budget[]
+}
+
+model Category {
+  id        String  @id @default(cuid())
+  userId    String
+  name      String
+  icon      String  @default("$")
+  color     String  @default("#6366f1")
+  isDefault Boolean @default(false)
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  budgets      Budget[]
+}
+
+model Transaction {
+  id         String   @id @default(cuid())
+  userId     String
+  categoryId String
+  amount     Float
+  note       String?
+  date       DateTime
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id])
+}
+
+model Budget {
+  id         String @id @default(cuid())
+  userId     String
+  categoryId String
+  amount     Float
+  month      String // "YYYY-MM"
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@unique([userId, categoryId, month])
+}
