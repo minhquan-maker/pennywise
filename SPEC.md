@@ -144,6 +144,12 @@ Deploy:    Vercel (FE) + Railway (BE)
 
 ## Screens
 
+### `/` — Landing Page
+Dark hero with brand headline and CTA. Sign in / sign up buttons in top nav.
+
+### `/about` — About Page
+Feature grid (6 cards), 4-step how-it-works, Free/Pro pricing cards, and CTA section. Linked from sidebar "About us" button.
+
 ### `/login` — Login Page
 Email + password form. Link to register.
 
@@ -409,13 +415,14 @@ Write reason in English.
 
 | Element | Value |
 |---------|-------|
-| Primary | `#6366f1` (Indigo) |
-| Success | `#10b981` (Emerald) |
-| Warning | `#f59e0b` (Amber) |
-| Danger | `#ef4444` (Red) |
-| Background | `#f8fafc` (Light gray) |
-| Card | `#ffffff` (White) |
-| Text | `#1e293b` (Slate 800) |
+| Background | `#0A0A0A` (near black) |
+| Surface | `#171717` (dark card) |
+| Border | `#262626` |
+| Accent | `#BFFF00` (neon lime) |
+| Accent Hover | `#ADFF00` |
+| Text Primary | `#ffffff` |
+| Text Secondary | `#a3a3a3` |
+| Text Tertiary | `#737373` |
 | Font | Inter (Google Fonts) |
 
 Responsive breakpoints: 640px / 768px / 1024px

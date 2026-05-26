@@ -1,6 +1,6 @@
 # PennyWise — AI Personal Finance Tracker
 
-> AI-powered personal finance tracker that helps you understand spending habits, set smart budgets, and get intelligent insights — so you save more every month.
+> AI-powered personal finance tracker with a sleek dark interface. Track expenses, set smart budgets, and get intelligent insights powered by Groq AI — so you save more every month.
 
 [![Platform](https://img.shields.io/badge/Platform-Web-blue?style=flat-square)](https://github.com/minhquan-maker/pennywise)
 [![Stack](https://img.shields.io/badge/Stack-React%2019%20%2B%20Vite%20%2B%20Tailwind%20v4-2d3748?style=flat-square&logo=react)](https://github.com/minhquan-maker/pennywise)
@@ -9,17 +9,9 @@
 
 ---
 
-## Quick Look
+## Screenshots
 
-```
-PennyWise
-├── 🤖 AI Monthly Summaries — Groq-powered spending analysis
-├── 📊 Visual Analytics — Spending trends, category breakdowns
-├── 💰 Smart Budgets — Per-category limits with AI suggestions
-├── ⚡ Quick Add — Floating action button for fast transaction entry
-├── 📱 Responsive — Works on desktop, tablet, and mobile
-└── 🔐 JWT Auth — Secure, private, self-contained
-```
+> Landing page and About page feature a bold dark theme with neon lime accents (#BFFF00). All internal app pages (dashboard, transactions, budget, analytics, settings) share the same cohesive design.
 
 ---
 
@@ -27,7 +19,7 @@ PennyWise
 
 ### Frontend
 - **React 19** + **TypeScript** + **Vite**
-- **TailwindCSS v4** with custom design tokens
+- **TailwindCSS v4** with custom dark design tokens
 - **Recharts** for data visualization
 - **TanStack Query** for data fetching
 - **Sonner** for toast notifications
@@ -52,7 +44,7 @@ Backend     Express · Node.js
 Database    Prisma ORM · SQLite
 AI          Groq LLM (llama-3.3-70b-versatile)
 Icons       Lucide React
-Fonts       Inter (Google Fonts)
+Theme       Dark (#0A0A0A) + Lime Green (#BFFF00)
 ```
 
 ---
@@ -67,7 +59,7 @@ pennywise/
 │   │   │   ├── charts/     ← CategoryPieChart, DailyBarChart, TrendLineChart
 │   │   │   ├── layout/     ← AppLayout (sidebar + content)
 │   │   │   └── ui/         ← Button, Card, Input, Select, Modal, Badge, FAB, etc.
-│   │   ├── pages/           ← Landing, Dashboard, Transactions, Budget, Analytics, Settings, Auth
+│   │   ├── pages/           ← Landing, Dashboard, Transactions, Budget, Analytics, Settings, About
 │   │   ├── stores/          ← Auth Zustand store
 │   │   ├── hooks/           ← useQueries (TanStack Query hooks)
 │   │   ├── lib/             ← API client, utils, services
@@ -140,22 +132,31 @@ Get your Groq API key at [console.groq.com](https://console.groq.com) — free t
 
 ---
 
-## Features
+## Pages & Features
 
-### Dashboard
-Financial snapshot showing total spent, comparison vs last month, category breakdown pie chart, last 7 days bar chart, and AI-generated monthly summary.
+### `/` — Landing Page
+Dark hero section with brand messaging, lime green CTA buttons, and a navigation link to sign up or log in.
 
-### Transactions
-Full CRUD for transactions with search, month filter, and category filter. Quick-add via floating action button with category picker, quick amount chips, and date shortcuts.
+### `/about` — About Page
+Full dark-themed page showcasing all features in a 6-card grid, 4-step how-it-works section, Free/Pro pricing cards, and a call-to-action. Accessible from the sidebar after login.
 
-### Budget
-Set monthly spending limits per category. Visual progress bars show spent vs budgeted. AI suggests budgets based on your spending history.
+### `/login` & `/register` — Auth Pages
+Dark full-page layout with a brand panel on the left and clean forms on the right. Neon lime "Get Started" buttons.
 
-### Analytics
-6-month spending trend chart, category breakdown with progress bars, and AI prediction of next month's spending with reasoning.
+### `/dashboard` — Dashboard
+Financial snapshot: greeting header, stat cards (total spent, vs last month, categories), pie chart, 7-day bar chart, and AI monthly summary with regenerate button.
 
-### Settings
-Update name, currency (USD/VND), export data as CSV, clear all data, or delete account.
+### `/transactions` — Transactions
+Filter bar with search, month picker, and category dropdown. Transaction list with edit/delete on hover. Quick-add via floating action button (lime green FAB) with category picker, quick-amount chips, and date shortcuts.
+
+### `/budget` — Budget
+Monthly budget cards with visual progress bars per category. Color-coded status (lime = on track, amber = warning, red = over). "AI Suggest" button auto-populates budgets from spending history.
+
+### `/analytics` — Analytics
+6-month spending trend line chart, category breakdown with progress bars, and AI-powered spending prediction with reasoning.
+
+### `/settings` — Settings
+Update display name, currency (USD/VND), export data as CSV, clear all data, or delete account.
 
 ---
 
@@ -200,6 +201,21 @@ Update name, currency (USD/VND), export data as CSV, clear all data, or delete a
 | `POST` | `/api/ai/suggest-budget` | AI budget suggestions |
 | `POST` | `/api/ai/insight` | AI insight on a category |
 | `POST` | `/api/ai/predict` | Next-month spending prediction |
+
+---
+
+## Design System
+
+| Element | Value |
+|---------|-------|
+| Background | `#0A0A0A` (near black) |
+| Surface | `#171717` (dark card) |
+| Border | `#262626` |
+| Accent | `#BFFF00` (neon lime) |
+| Accent Hover | `#ADFF00` |
+| Text Primary | `#ffffff` |
+| Text Secondary | `#a3a3a3` |
+| Text Tertiary | `#737373` |
 
 ---
 
