@@ -156,6 +156,18 @@ export function useDeleteBudget() {
   })
 }
 
+export function useClearAllBudgets() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => clearService.clearAllBudgets(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['budgets'] })
+      toast.success('All budgets cleared')
+    },
+    onError: () => toast.error('Failed to clear budgets'),
+  })
+}
+
 // Analytics
 export function useDashboard(month?: string) {
   return useQuery({

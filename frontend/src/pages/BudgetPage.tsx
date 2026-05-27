@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Target, Sparkles, Plus, X } from 'lucide-react'
+import { Target, Sparkles, Plus, X, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -9,9 +9,9 @@ import { Modal } from '@/components/ui/Modal'
 import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { toast } from 'sonner'
-import { formatCurrency, getCurrentMonth, formatMonth } from '@/lib/utils'
+import { formatCurrency, getCurrentMonth, formatMonth, cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
-import { useCategories, useBudgets, useUpsertBudget, useDeleteBudget, useAISuggestBudget } from '@/hooks/useQueries'
+import { useCategories, useBudgets, useUpsertBudget, useDeleteBudget, useClearAllBudgets, useAISuggestBudget } from '@/hooks/useQueries'
 import { budgetService } from '@/lib/services'
 
 export function BudgetPage() {
@@ -38,7 +38,11 @@ export function BudgetPage() {
 
   const upsertBudget = useUpsertBudget()
   const deleteBudget = useDeleteBudget()
+  const clearAllBudgets = useClearAllBudgets()
   const aiSuggest = useAISuggestBudget()
+
+  const [fabOpen, setFabOpen] = useState(false)
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false)
 
   // Build category spending map
   const categorySpending: Record<string, number> = {}
@@ -264,22 +268,26 @@ export function BudgetPage() {
         >
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-text-secondary">Category</label>
-            <select
-              value={formCategory}
-              onChange={(e) => setFormCategory(e.target.value)}
-              required
-              className="w-full h-12 px-4 rounded-xl border border-[#262626] bg-neutral-800 text-base text-white focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all appearance-none pr-10 cursor-pointer"
-              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a3a3a3' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
-            >
-              <option value="">Select category</option>
+            <div className="grid grid-cols-2 gap-2">
               {categories
                 .filter((c) => !existingBudgetCats.has(c.id))
                 .map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.icon} {c.name}
-                  </option>
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setFormCategory(c.id)}
+                    className={cn(
+                      'flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all',
+                      formCategory === c.id
+                        ? 'bg-primary-500/20 border-primary-500 text-white'
+                        : 'bg-neutral-800 border-[#262626] text-text-secondary hover:border-neutral-600'
+                    )}
+                  >
+                    <span className="text-base">{c.icon}</span>
+                    <span>{c.name}</span>
+                  </button>
                 ))}
-            </select>
+            </div>
           </div>
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-text-secondary">Budget Amount (USD)</label>
@@ -295,6 +303,71 @@ export function BudgetPage() {
             />
           </div>
         </form>
+      </Modal>
+
+      {/* Floating Action Button */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+        {fabOpen && (
+          <>
+            {/* Clear All option */}
+            <button
+              onClick={() => { setFabOpen(false); setConfirmClearOpen(true) }}
+              className="flex items-center gap-3 pl-4 pr-3 py-2.5 bg-neutral-800 hover:bg-neutral-700 border border-[#333] rounded-xl shadow-lg transition-all group"
+            >
+              <span className="text-sm font-medium text-white">Clear All</span>
+              <div className="w-9 h-9 flex items-center justify-center rounded-full bg-red-500/20 text-red-400 group-hover:bg-red-500/30 transition-colors">
+                <Trash2 size={16} />
+              </div>
+            </button>
+            {/* Add Budget option */}
+            <button
+              onClick={() => { setFabOpen(false); setModalOpen(true) }}
+              className="flex items-center gap-3 pl-4 pr-3 py-2.5 bg-neutral-800 hover:bg-neutral-700 border border-[#333] rounded-xl shadow-lg transition-all group"
+            >
+              <span className="text-sm font-medium text-white">Add Budget</span>
+              <div className="w-9 h-9 flex items-center justify-center rounded-full bg-[#BFFF00]/10 text-[#BFFF00] group-hover:bg-[#BFFF00]/20 transition-colors">
+                <Plus size={16} />
+              </div>
+            </button>
+          </>
+        )}
+        {/* Main FAB */}
+        <button
+          onClick={() => setFabOpen(!fabOpen)}
+          className="w-14 h-14 rounded-full bg-[#BFFF00] hover:bg-[#d9ff4d] text-neutral-950 shadow-lg shadow-[#BFFF00]/20 flex items-center justify-center transition-all active:scale-95"
+        >
+          {fabOpen ? <ChevronUp size={22} strokeWidth={2.5} /> : <Plus size={22} strokeWidth={2.5} />}
+        </button>
+      </div>
+
+      {/* Clear All Confirmation Modal */}
+      <Modal isOpen={confirmClearOpen} onClose={() => setConfirmClearOpen(false)}>
+        <div className="flex flex-col items-center text-center p-2">
+          <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
+            <Trash2 size={26} className="text-red-400" />
+          </div>
+          <h3 className="text-lg font-bold text-white mb-2">Clear All Budgets?</h3>
+          <p className="text-sm text-text-secondary mb-6 max-w-xs">
+            This will remove all budgets for <span className="text-white font-medium">{formatMonth(month)}</span>. This action cannot be undone.
+          </p>
+          <div className="flex gap-3 w-full">
+            <button
+              onClick={() => setConfirmClearOpen(false)}
+              className="flex-1 h-11 px-4 rounded-xl border border-[#333] bg-neutral-800 text-sm font-semibold text-white hover:bg-neutral-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                clearAllBudgets.mutate()
+                setConfirmClearOpen(false)
+              }}
+              className="flex-1 h-11 px-4 rounded-xl bg-red-500 hover:bg-red-600 text-sm font-semibold text-white transition-colors"
+            >
+              Clear All
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   )

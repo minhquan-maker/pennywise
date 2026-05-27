@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2, Plus, X, ChevronUp } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { FloatingActionButton } from '@/components/ui/FloatingActionButton'
 import { TransactionModal } from '@/components/ui/TransactionModal'
-import { formatCurrency, formatDate, getCurrentMonth, formatMonth } from '@/lib/utils'
+import { formatCurrency, formatDate, getCurrentMonth, formatMonth, cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
-import { transactionService } from '@/lib/services'
+import { transactionService, clearService } from '@/lib/services'
 import { useCategories } from '@/hooks/useQueries'
 import type { Transaction } from '@/types'
 
@@ -21,6 +21,7 @@ export function TransactionsPage() {
   const [search, setSearch] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [editTxn, setEditTxn] = useState<Transaction | null>(null)
+  const [fabOpen, setFabOpen] = useState(false)
 
   const qc = useQueryClient()
 
@@ -58,6 +59,15 @@ export function TransactionsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['transactions'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
+    },
+  })
+
+  const clearAll = useMutation({
+    mutationFn: () => clearService.clearAllTransactions(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['transactions'] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+      setFabOpen(false)
     },
   })
 
@@ -258,8 +268,47 @@ export function TransactionsPage() {
         </Card>
       )}
 
-      {/* Floating Action Button */}
-      <FloatingActionButton onClick={openAdd} />
+      {/* FAB Menu */}
+      {fabOpen && (
+        <div className="fixed bottom-24 right-6 z-40 flex flex-col gap-2 lg:bottom-26 lg:right-8">
+          <button
+            onClick={() => clearAll.mutate()}
+            disabled={clearAll.isPending}
+            className="flex items-center gap-3 pl-4 pr-5 py-3 rounded-2xl bg-neutral-800 border border-[#262626] text-white shadow-xl hover:bg-neutral-700 transition-all"
+          >
+            <span className="text-sm font-medium">Clear All</span>
+            <span className="w-8 h-8 rounded-full bg-red-900/50 flex items-center justify-center">
+              <Trash2 className="w-4 h-4 text-red-400" />
+            </span>
+          </button>
+          <button
+            onClick={() => {
+              setFabOpen(false)
+              openAdd()
+            }}
+            className="flex items-center gap-3 pl-4 pr-5 py-3 rounded-2xl bg-neutral-800 border border-[#262626] text-white shadow-xl hover:bg-neutral-700 transition-all"
+          >
+            <span className="text-sm font-medium">Add Transaction</span>
+            <span className="w-8 h-8 rounded-full bg-primary-900/50 flex items-center justify-center">
+              <Plus className="w-4 h-4 text-primary-400" />
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* FAB Toggle */}
+      <button
+        onClick={() => setFabOpen((prev) => !prev)}
+        aria-label="Toggle menu"
+        className={cn(
+          'fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 lg:bottom-8 lg:right-8',
+          fabOpen
+            ? 'bg-neutral-800 text-white shadow-xl'
+            : 'bg-primary-500 text-[#0A0A0A] shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 hover:scale-105 active:scale-95'
+        )}
+      >
+        {fabOpen ? <X className="h-6 w-6" strokeWidth={2.5} /> : <Plus className="h-6 w-6" strokeWidth={2.5} />}
+      </button>
 
       {/* Transaction Modal */}
       <TransactionModal

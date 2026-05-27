@@ -164,7 +164,7 @@ export function DashboardPage() {
             {aiSummary ? 'Regenerate' : 'Generate'}
           </Button>
         </Card.Header>
-        <Card.Body>
+        <Card.Body variant="dark">
           {aiLoading && (
             <div className="space-y-2">
               <Skeleton variant="text" className="w-full" />
