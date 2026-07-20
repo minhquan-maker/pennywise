@@ -2,6 +2,10 @@
 
 > AI-powered personal finance tracker with a sleek dark interface. Track expenses, set smart budgets, and get intelligent insights powered by Groq AI — so you save more every month.
 
+> [!NOTE]
+> This project is in maintenance mode and no longer reflects current active work.
+> See [myportfolio](https://github.com/minhquan-maker/myportfolio) or [flood-rescue-cv](https://github.com/minhquan-maker/flood-rescue-cv) for current projects.
+
 [![Platform](https://img.shields.io/badge/Platform-Web-blue?style=flat-square)](https://github.com/minhquan-maker/pennywise)
 [![Stack](https://img.shields.io/badge/Stack-React%2019%20%2B%20Vite%20%2B%20Tailwind%20v4-2d3748?style=flat-square&logo=react)](https://github.com/minhquan-maker/pennywise)
 [![AI](https://img.shields.io/badge/AI-Groq%20LLM-00a8fc?style=flat-square&logo=rocket)](https://console.groq.com)
