@@ -170,6 +170,25 @@
 .animate-scale-in       { animation: scaleIn      var(--duration-normal) var(--ease-spring) both; }
 .animate-slide-in-right { animation: slideInRight var(--duration-slow)  var(--ease-out) both; }
 
+.scroll-hidden {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 600ms var(--ease-out), transform 600ms var(--ease-out);
+}
+
+.scroll-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-hidden {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
 /* Skeleton shimmer */
 .skeleton {
   background: linear-gradient(
