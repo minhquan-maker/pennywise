@@ -7,6 +7,7 @@ import {
   budgetService,
   analyticsService,
   aiService,
+  clearService,
 } from '@/lib/services'
 
 // Auth
@@ -53,7 +54,23 @@ export function useCreateCategory() {
       qc.invalidateQueries({ queryKey: ['categories'] })
       toast.success('Category created')
     },
-    onError: () => toast.error('Failed to create category'),
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to create category'
+      toast.error(msg)
+    },
+  })
+}
+
+export function useUpdateCategory() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { name?: string; icon?: string; color?: string } }) =>
+      categoryService.update(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['categories'] })
+      toast.success('Category updated')
+    },
+    onError: () => toast.error('Failed to update category'),
   })
 }
 
@@ -63,9 +80,14 @@ export function useDeleteCategory() {
     mutationFn: (id: string) => categoryService.delete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['categories'] })
+      qc.invalidateQueries({ queryKey: ['transactions'] })
+      qc.invalidateQueries({ queryKey: ['budgets'] })
       toast.success('Category deleted')
     },
-    onError: () => toast.error('Failed to delete category'),
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to delete category'
+      toast.error(msg)
+    },
   })
 }
 
@@ -85,9 +107,13 @@ export function useCreateTransaction() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['transactions'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
+      qc.invalidateQueries({ queryKey: ['budgets'] })
       toast.success('Transaction added')
     },
-    onError: () => toast.error('Failed to add transaction'),
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to add transaction'
+      toast.error(msg)
+    },
   })
 }
 
@@ -104,9 +130,13 @@ export function useUpdateTransaction() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['transactions'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
+      qc.invalidateQueries({ queryKey: ['budgets'] })
       toast.success('Transaction updated')
     },
-    onError: () => toast.error('Failed to update transaction'),
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to update transaction'
+      toast.error(msg)
+    },
   })
 }
 
@@ -117,9 +147,27 @@ export function useDeleteTransaction() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['transactions'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
+      qc.invalidateQueries({ queryKey: ['budgets'] })
       toast.success('Transaction deleted')
     },
-    onError: () => toast.error('Failed to delete transaction'),
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to delete transaction'
+      toast.error(msg)
+    },
+  })
+}
+
+export function useClearAllTransactions() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => clearService.clearAllTransactions(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['transactions'] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+      qc.invalidateQueries({ queryKey: ['budgets'] })
+      toast.success('All transactions cleared')
+    },
+    onError: () => toast.error('Failed to clear transactions'),
   })
 }
 
@@ -140,7 +188,10 @@ export function useUpsertBudget() {
       qc.invalidateQueries({ queryKey: ['budgets'] })
       toast.success('Budget saved')
     },
-    onError: () => toast.error('Failed to save budget'),
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to save budget'
+      toast.error(msg)
+    },
   })
 }
 
@@ -173,7 +224,6 @@ export function useDashboard(month?: string) {
   return useQuery({
     queryKey: ['dashboard', month],
     queryFn: () => analyticsService.dashboard(month).then((r) => r.data!),
-    enabled: false,
   })
 }
 
@@ -206,5 +256,15 @@ export function useAIInsight() {
 export function useAIPredict() {
   return useMutation({
     mutationFn: () => aiService.predict(),
+  })
+}
+
+// Export
+export function useExportCSV() {
+  return useMutation({
+    mutationFn: async (month?: string) => {
+      const data = await clearService.exportCSV(month)
+      return data
+    },
   })
 }

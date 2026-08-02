@@ -63,6 +63,13 @@ export const analyticsService = {
 export const clearService = {
   clearAllTransactions: () => api.delete('/transactions/clear'),
   clearAllBudgets: () => api.delete('/budgets/clear'),
+  exportCSV: async (month?: string): Promise<Blob> => {
+    const params = month ? `?month=${month}` : ''
+    const response = await api.get(`/export/csv${params}`, {
+      responseType: 'blob',
+    })
+    return response.data
+  },
 }
 
 // AI

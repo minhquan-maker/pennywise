@@ -1,10 +1,9 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Target, Sparkles, Plus, X, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Target, Sparkles, Plus, X, Trash2, ChevronUp } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
 import { Modal } from '@/components/ui/Modal'
 import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -12,7 +11,7 @@ import { toast } from 'sonner'
 import { formatCurrency, getCurrentMonth, formatMonth, cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
 import { useCategories, useBudgets, useUpsertBudget, useDeleteBudget, useClearAllBudgets, useAISuggestBudget } from '@/hooks/useQueries'
-import { budgetService } from '@/lib/services'
+import { analyticsService } from '@/lib/services'
 
 export function BudgetPage() {
   const user = useAuthStore((s) => s.user)
@@ -27,13 +26,9 @@ export function BudgetPage() {
   const { data: budgets = [], isLoading } = useBudgets(month)
   const { data: categories = [] } = useCategories()
 
-  // Lazy dashboard for spending data
   const { data: dashboardData } = useQuery({
     queryKey: ['dashboard', month],
-    queryFn: () =>
-      import('@/lib/services').then(({ analyticsService }) =>
-        analyticsService.dashboard(month).then((r) => r.data!)
-      ),
+    queryFn: () => analyticsService.dashboard(month).then((r) => r.data!),
   })
 
   const upsertBudget = useUpsertBudget()
@@ -44,13 +39,11 @@ export function BudgetPage() {
   const [fabOpen, setFabOpen] = useState(false)
   const [confirmClearOpen, setConfirmClearOpen] = useState(false)
 
-  // Build category spending map
   const categorySpending: Record<string, number> = {}
   for (const cat of dashboardData?.byCategory || []) {
     categorySpending[cat.name] = cat.total
   }
 
-  // Get existing budget category IDs for this month
   const existingBudgetCats = new Set(budgets.map((b) => b.categoryId))
 
   const handleCloseModal = () => {
@@ -61,6 +54,7 @@ export function BudgetPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!formCategory || !formAmount) return
     upsertBudget.mutate(
       { categoryId: formCategory, amount: parseFloat(formAmount), month },
       { onSuccess: handleCloseModal }
@@ -76,14 +70,16 @@ export function BudgetPage() {
         toast.error('No suggestions returned. Add transactions first for AI to analyze.')
         return
       }
+      let created = 0
       for (const s of suggestions) {
         const cat = categories.find((c) => c.name === s.category)
         if (cat && !existingBudgetCats.has(cat.id)) {
           upsertBudget.mutate({ categoryId: cat.id, amount: s.suggestedBudget, month })
+          created++
         }
       }
       qc.invalidateQueries({ queryKey: ['budgets'] })
-      toast.success(`AI suggested ${suggestions.length} budget(s) for you!`)
+      toast.success(created > 0 ? `AI created ${created} budget(s)!` : 'AI suggestions applied — all categories already have budgets.')
     } catch {
       toast.error('Failed to generate budget suggestions. Check your GROQ_API_KEY.')
     }
@@ -91,7 +87,6 @@ export function BudgetPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-extrabold text-white">Budget</h1>
@@ -118,7 +113,6 @@ export function BudgetPage() {
         </div>
       </div>
 
-      {/* Month selector */}
       <Card variant="dark" padding="sm">
         <div className="flex items-center gap-3">
           <label className="text-sm text-text-secondary font-medium">Month</label>
@@ -133,7 +127,6 @@ export function BudgetPage() {
         </div>
       </Card>
 
-      {/* Loading skeleton */}
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -151,7 +144,6 @@ export function BudgetPage() {
           ))}
         </div>
       ) : budgets.length === 0 ? (
-        /* Empty state */
         <Card className="p-12 text-center">
           <div className="flex justify-center mb-4">
             <div className="p-4 rounded-full bg-neutral-800">
@@ -159,11 +151,8 @@ export function BudgetPage() {
             </div>
           </div>
           <p className="text-white font-semibold mb-1">No budgets set</p>
-          <p className="text-sm text-text-secondary mb-1">
-            Set a budget to track your spending
-          </p>
-          <p className="text-xs text-text-tertiary mb-6">
-            Create a budget to start monitoring your category spending.
+          <p className="text-sm text-text-secondary mb-6">
+            Set a budget to track your spending limits per category.
           </p>
           <Button
             variant="gradient"
@@ -175,7 +164,6 @@ export function BudgetPage() {
           </Button>
         </Card>
       ) : (
-        /* Budget cards grid */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-stagger">
           {budgets.map((budget) => {
             const spent = categorySpending[budget.category.name] || 0
@@ -183,17 +171,11 @@ export function BudgetPage() {
             const isOver = pct >= 100
             const isWarn = pct >= 80 && pct < 100
 
-            const statusColor = isOver
-              ? '#EF4444'
-              : isWarn
-              ? '#F59E0B'
-              : '#BFFF00'
-
+            const statusColor = isOver ? '#EF4444' : isWarn ? '#F59E0B' : '#BFFF00'
             const statusLabel = isOver ? 'Over budget' : isWarn ? 'Near limit' : 'On track'
 
             return (
               <Card key={budget.id} variant="dark" padding="md">
-                {/* Header row */}
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <span className="text-2xl">{budget.category.icon}</span>
@@ -209,7 +191,6 @@ export function BudgetPage() {
                   />
                 </div>
 
-                {/* Progress bar */}
                 <div className="h-2 rounded-full bg-neutral-800 overflow-hidden mb-3">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${
@@ -219,18 +200,11 @@ export function BudgetPage() {
                   />
                 </div>
 
-                {/* Footer row */}
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-text-secondary tabular-nums">
                     {formatCurrency(spent, currency)} / {formatCurrency(budget.amount, currency)}
                   </span>
-                  <Badge
-                    label={statusLabel}
-                    color={statusColor}
-                    variant="soft"
-                    size="sm"
-                    dot
-                  />
+                  <Badge label={statusLabel} color={statusColor} variant="soft" size="sm" dot />
                 </div>
               </Card>
             )
@@ -238,7 +212,6 @@ export function BudgetPage() {
         </div>
       )}
 
-      {/* Add/Edit Budget Modal */}
       <Modal
         isOpen={modalOpen}
         onClose={handleCloseModal}
@@ -261,11 +234,7 @@ export function BudgetPage() {
           </div>
         }
       >
-        <form
-          id="budget-form"
-          onSubmit={handleSubmit}
-          className="space-y-4"
-        >
+        <form id="budget-form" onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-text-secondary">Category</label>
             <div className="grid grid-cols-2 gap-2">
@@ -290,7 +259,9 @@ export function BudgetPage() {
             </div>
           </div>
           <div className="space-y-2">
-            <label className="block text-sm font-semibold text-text-secondary">Budget Amount (USD)</label>
+            <label className="block text-sm font-semibold text-text-secondary">
+              Budget Amount ({currency})
+            </label>
             <input
               type="number"
               step="0.01"
@@ -305,11 +276,9 @@ export function BudgetPage() {
         </form>
       </Modal>
 
-      {/* Floating Action Button */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
         {fabOpen && (
           <>
-            {/* Clear All option */}
             <button
               onClick={() => { setFabOpen(false); setConfirmClearOpen(true) }}
               className="flex items-center gap-3 pl-4 pr-3 py-2.5 bg-neutral-800 hover:bg-neutral-700 border border-[#333] rounded-xl shadow-lg transition-all group"
@@ -319,7 +288,6 @@ export function BudgetPage() {
                 <Trash2 size={16} />
               </div>
             </button>
-            {/* Add Budget option */}
             <button
               onClick={() => { setFabOpen(false); setModalOpen(true) }}
               className="flex items-center gap-3 pl-4 pr-3 py-2.5 bg-neutral-800 hover:bg-neutral-700 border border-[#333] rounded-xl shadow-lg transition-all group"
@@ -331,7 +299,6 @@ export function BudgetPage() {
             </button>
           </>
         )}
-        {/* Main FAB */}
         <button
           onClick={() => setFabOpen(!fabOpen)}
           className="w-14 h-14 rounded-full bg-[#BFFF00] hover:bg-[#d9ff4d] text-neutral-950 shadow-lg shadow-[#BFFF00]/20 flex items-center justify-center transition-all active:scale-95"
@@ -340,7 +307,6 @@ export function BudgetPage() {
         </button>
       </div>
 
-      {/* Clear All Confirmation Modal */}
       <Modal isOpen={confirmClearOpen} onClose={() => setConfirmClearOpen(false)}>
         <div className="flex flex-col items-center text-center p-2">
           <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
@@ -348,7 +314,8 @@ export function BudgetPage() {
           </div>
           <h3 className="text-lg font-bold text-white mb-2">Clear All Budgets?</h3>
           <p className="text-sm text-text-secondary mb-6 max-w-xs">
-            This will remove all budgets for <span className="text-white font-medium">{formatMonth(month)}</span>. This action cannot be undone.
+            This will remove all budgets for{' '}
+            <span className="text-white font-medium">{formatMonth(month)}</span>. This action cannot be undone.
           </p>
           <div className="flex gap-3 w-full">
             <button

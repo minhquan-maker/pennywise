@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Trash2, Plus, X, ChevronUp } from 'lucide-react'
+import { Pencil, Trash2, Plus, X } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { FloatingActionButton } from '@/components/ui/FloatingActionButton'
+import { Modal } from '@/components/ui/Modal'
 import { TransactionModal } from '@/components/ui/TransactionModal'
 import { formatCurrency, formatDate, getCurrentMonth, formatMonth, cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
@@ -22,6 +22,7 @@ export function TransactionsPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editTxn, setEditTxn] = useState<Transaction | null>(null)
   const [fabOpen, setFabOpen] = useState(false)
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false)
 
   const qc = useQueryClient()
 
@@ -38,6 +39,7 @@ export function TransactionsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['transactions'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
+      qc.invalidateQueries({ queryKey: ['budgets'] })
       setModalOpen(false)
       setEditTxn(null)
     },
@@ -49,6 +51,7 @@ export function TransactionsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['transactions'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
+      qc.invalidateQueries({ queryKey: ['budgets'] })
       setModalOpen(false)
       setEditTxn(null)
     },
@@ -59,6 +62,7 @@ export function TransactionsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['transactions'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
+      qc.invalidateQueries({ queryKey: ['budgets'] })
     },
   })
 
@@ -67,7 +71,9 @@ export function TransactionsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['transactions'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
+      qc.invalidateQueries({ queryKey: ['budgets'] })
       setFabOpen(false)
+      setConfirmClearOpen(false)
     },
   })
 
@@ -272,8 +278,7 @@ export function TransactionsPage() {
       {fabOpen && (
         <div className="fixed bottom-24 right-6 z-40 flex flex-col gap-2 lg:bottom-26 lg:right-8">
           <button
-            onClick={() => clearAll.mutate()}
-            disabled={clearAll.isPending}
+            onClick={() => { setFabOpen(false); setConfirmClearOpen(true) }}
             className="flex items-center gap-3 pl-4 pr-5 py-3 rounded-2xl bg-neutral-800 border border-[#262626] text-white shadow-xl hover:bg-neutral-700 transition-all"
           >
             <span className="text-sm font-medium">Clear All</span>
@@ -320,6 +325,35 @@ export function TransactionsPage() {
         isLoading={isMutating}
         currency={currency}
       />
+
+      {/* Clear All Confirmation Modal */}
+      <Modal isOpen={confirmClearOpen} onClose={() => setConfirmClearOpen(false)}>
+        <div className="flex flex-col items-center text-center p-2">
+          <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
+            <Trash2 size={26} className="text-red-400" />
+          </div>
+          <h3 className="text-lg font-bold text-white mb-2">Clear All Transactions?</h3>
+          <p className="text-sm text-text-secondary mb-6 max-w-xs">
+            This will delete all transactions for{' '}
+            <span className="text-white font-medium">{formatMonth(month)}</span>. This action cannot be undone.
+          </p>
+          <div className="flex gap-3 w-full">
+            <button
+              onClick={() => setConfirmClearOpen(false)}
+              className="flex-1 h-11 px-4 rounded-xl border border-[#333] bg-neutral-800 text-sm font-semibold text-white hover:bg-neutral-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => clearAll.mutate()}
+              disabled={clearAll.isPending}
+              className="flex-1 h-11 px-4 rounded-xl bg-red-500 hover:bg-red-600 text-sm font-semibold text-white transition-colors disabled:opacity-50"
+            >
+              {clearAll.isPending ? 'Clearing...' : 'Clear All'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

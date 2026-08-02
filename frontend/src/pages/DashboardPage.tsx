@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { TrendingUp, TrendingDown, Wallet, Layers, Sparkles, RefreshCw } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, Sparkles, RefreshCw, PiggyBank } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -8,7 +8,7 @@ import { CategoryPieChart } from '@/components/charts/CategoryPieChart'
 import { DailyBarChart } from '@/components/charts/DailyBarChart'
 import { formatCurrency, formatMonth, getCurrentMonth } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
-import { analyticsService, aiService } from '@/lib/services'
+import { analyticsService, aiService, budgetService } from '@/lib/services'
 
 export function DashboardPage() {
   const user = useAuthStore((s) => s.user)
@@ -18,6 +18,13 @@ export function DashboardPage() {
     queryKey: ['dashboard', month],
     queryFn: () => analyticsService.dashboard(month).then((r) => r.data!),
   })
+
+  const { data: budgetsData } = useQuery({
+    queryKey: ['budgets', month],
+    queryFn: () => budgetService.getAll(month).then((r) => r.data!.budgets),
+  })
+
+  const totalBudget = (budgetsData || []).reduce((sum: number, b: { amount: number }) => sum + b.amount, 0)
 
   const [aiSummary, setAiSummary] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
@@ -43,7 +50,6 @@ export function DashboardPage() {
   return (
     <div className="space-y-8 animate-fade-in">
 
-      {/* Hero greeting */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-extrabold text-white leading-tight">
@@ -58,9 +64,7 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* Stats row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-stagger">
-        {/* Total Spent */}
         <Card variant="dark" padding="md">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-xl bg-neutral-800 flex items-center justify-center flex-shrink-0">
@@ -68,21 +72,20 @@ export function DashboardPage() {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium text-text-secondary">Total Spent</p>
-              <p className="text-3xl font-extrabold tabular-nums text-white mt-0.5">
-                {formatCurrency(dashboard?.total || 0, currency)}
-              </p>
+              {isLoading ? (
+                <Skeleton variant="text" className="w-28 h-9 mt-1" />
+              ) : (
+                <p className="text-3xl font-extrabold tabular-nums text-white mt-0.5">
+                  {formatCurrency(dashboard?.total || 0, currency)}
+                </p>
+              )}
             </div>
           </div>
         </Card>
 
-        {/* vs Last Month */}
         <Card variant="dark" padding="md">
           <div className="flex items-start gap-4">
-            <div
-              className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                changePositive ? 'bg-neutral-800' : 'bg-neutral-800'
-              }`}
-            >
+            <div className="w-12 h-12 rounded-xl bg-neutral-800 flex items-center justify-center flex-shrink-0">
               {changePositive ? (
                 <TrendingUp className="w-5 h-5 text-danger-500" />
               ) : (
@@ -91,48 +94,54 @@ export function DashboardPage() {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium text-text-secondary">vs Last Month</p>
-              <p
-                className={`text-3xl font-extrabold tabular-nums mt-0.5 ${
-                  changePositive ? 'text-danger-500' : 'text-primary-400'
-                }`}
-              >
-                {changePositive ? '+' : ''}{dashboard?.changePercent || 0}%
-              </p>
+              {isLoading ? (
+                <Skeleton variant="text" className="w-24 h-9 mt-1" />
+              ) : (
+                <p className={`text-3xl font-extrabold tabular-nums mt-0.5 ${changePositive ? 'text-danger-500' : 'text-primary-400'}`}>
+                  {changePositive ? '+' : ''}{dashboard?.changePercent || 0}%
+                </p>
+              )}
             </div>
           </div>
         </Card>
 
-        {/* Categories */}
         <Card variant="dark" padding="md">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-xl bg-neutral-800 flex items-center justify-center flex-shrink-0">
-              <Layers className="w-5 h-5 text-text-secondary" />
+              <PiggyBank className="w-5 h-5 text-text-secondary" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-medium text-text-secondary">Categories</p>
-              <p className="text-3xl font-extrabold tabular-nums text-white mt-0.5">
-                {dashboard?.byCategory.length || 0}
-              </p>
+              <p className="text-sm font-medium text-text-secondary">Monthly Budget</p>
+              {isLoading ? (
+                <Skeleton variant="text" className="w-24 h-9 mt-1" />
+              ) : (
+                <p className="text-3xl font-extrabold tabular-nums text-white mt-0.5">
+                  {formatCurrency(totalBudget, currency)}
+                </p>
+              )}
             </div>
           </div>
         </Card>
       </div>
 
-      {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-stagger">
         <Card variant="dark" padding="md">
           <Card.Header>
             <h2 className="text-base font-bold text-white">Spending by Category</h2>
           </Card.Header>
           <Card.Body>
-            <CategoryPieChart
-              data={(dashboard?.byCategory || []).map((c) => ({
-                name: c.name,
-                value: c.total,
-                icon: c.icon,
-                color: c.color,
-              }))}
-            />
+            {isLoading ? (
+              <Skeleton variant="rectangular" className="w-full h-56" />
+            ) : (
+              <CategoryPieChart
+                data={(dashboard?.byCategory || []).map((c) => ({
+                  name: c.name,
+                  value: c.total,
+                  icon: c.icon,
+                  color: c.color,
+                }))}
+              />
+            )}
           </Card.Body>
         </Card>
 
@@ -141,12 +150,15 @@ export function DashboardPage() {
             <h2 className="text-base font-bold text-white">Last 7 Days</h2>
           </Card.Header>
           <Card.Body>
-            <DailyBarChart data={dashboard?.last7Days || []} />
+            {isLoading ? (
+              <Skeleton variant="rectangular" className="w-full h-56" />
+            ) : (
+              <DailyBarChart data={dashboard?.last7Days || []} />
+            )}
           </Card.Body>
         </Card>
       </div>
 
-      {/* AI Summary */}
       <Card variant="dark" padding="md">
         <Card.Header className="flex items-center justify-between">
           <div className="flex items-center gap-2">

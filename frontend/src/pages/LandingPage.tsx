@@ -336,9 +336,9 @@ export function LandingPage() {
               >
                 How It Works
               </button>
-              <a href="#" className="text-white/70 hover:text-white text-xs transition-colors">
+              <Link to="/about" className="text-white/70 hover:text-white text-xs transition-colors">
                 Pricing
-              </a>
+              </Link>
             </div>
             {/* CTA */}
             <Link to="/register">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Check, Calendar, FileText } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
@@ -26,26 +26,24 @@ export function TransactionModal({
   isLoading,
   currency,
 }: TransactionModalProps) {
-  const [amount, setAmount] = useState('')
-  const [categoryId, setCategoryId] = useState('')
-  const [note, setNote] = useState('')
-  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0])
-
-  useEffect(() => {
-    if (isOpen) {
-      if (initialData) {
-        setAmount(initialData.amount.toString())
-        setCategoryId(initialData.categoryId)
-        setNote(initialData.note || '')
-        setDate(new Date(initialData.date).toISOString().split('T')[0])
-      } else {
-        setAmount('')
-        setCategoryId(categories[0]?.id || '')
-        setNote('')
-        setDate(new Date().toISOString().split('T')[0])
+  const defaults = initialData
+    ? {
+        amount: initialData.amount.toString(),
+        categoryId: initialData.categoryId,
+        note: initialData.note || '',
+        date: new Date(initialData.date).toISOString().split('T')[0],
       }
-    }
-  }, [isOpen, initialData, categories])
+    : {
+        amount: '',
+        categoryId: categories[0]?.id || '',
+        note: '',
+        date: new Date().toISOString().split('T')[0],
+      }
+
+  const [amount, setAmount] = useState(defaults.amount)
+  const [categoryId, setCategoryId] = useState(defaults.categoryId)
+  const [note, setNote] = useState(defaults.note)
+  const [date, setDate] = useState(defaults.date)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -84,7 +82,7 @@ export function TransactionModal({
         </div>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form key={initialData?.id || 'new'} onSubmit={handleSubmit} className="space-y-5">
         {/* Amount + Quick chips */}
         <div className="space-y-2">
           <label className="block text-sm font-semibold text-text-secondary">Amount</label>

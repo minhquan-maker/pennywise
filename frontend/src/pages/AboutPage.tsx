@@ -227,7 +227,7 @@ export function AboutPage() {
                 <span className="text-[#0A0A0A]/60 mb-2">/month</span>
               </div>
               <ul className="space-y-3 mb-8">
-                {['Everything in Free', 'AI budget suggestions', 'Export to CSV / PDF', 'Multiple currencies', 'Priority support'].map(item => (
+                {['Everything in Free', 'Advanced AI insights', 'PDF export', 'Custom categories', 'Priority support'].map(item => (
                   <li key={item} className="flex items-center gap-3 text-sm text-[#0A0A0A]">
                     <svg className="w-4 h-4 text-[#0A0A0A] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12"/>

@@ -1,234 +1,207 @@
 # PennyWise — AI Personal Finance Tracker
 
-> AI-powered personal finance tracker with a sleek dark interface. Track expenses, set smart budgets, and get intelligent insights powered by Groq AI — so you save more every month.
+PennyWise is an AI-powered personal finance tracker for recording expenses, managing monthly budgets, understanding spending patterns, and getting practical AI insights. It uses a dark interface with lime accents and supports USD and VND.
 
-[![Platform](https://img.shields.io/badge/Platform-Web-blue?style=flat-square)](https://github.com/minhquan-maker/pennywise)
-[![Stack](https://img.shields.io/badge/Stack-React%2019%20%2B%20Vite%20%2B%20Tailwind%20v4-2d3748?style=flat-square&logo=react)](https://github.com/minhquan-maker/pennywise)
-[![AI](https://img.shields.io/badge/AI-Groq%20LLM-00a8fc?style=flat-square&logo=rocket)](https://console.groq.com)
-[![License](https://img.shields.io/badge/License-MIT-lightgrey?style=flat-square)](#)
+## Features
 
----
+- JWT authentication with bcrypt password hashing
+- Expense tracking with categories, notes, dates, search, filters, edit, and delete
+- Custom categories with selectable icons and colors
+- Monthly budgets with progress and over-budget warnings
+- AI budget suggestions based on spending history
+- Dashboard spending summary, category donut chart, and seven-day chart
+- Six-month analytics trend and AI spending prediction
+- CSV export of authenticated transaction data
+- Profile and currency settings
+- Clear-data and account-deletion confirmations
+- Responsive desktop and mobile layout
 
-## Screenshots
+## Stack
 
-> Landing page and About page feature a bold dark theme with neon lime accents (#BFFF00). All internal app pages (dashboard, transactions, budget, analytics, settings) share the same cohesive design.
-
----
-
-## What's Inside
-
-### Frontend
-- **React 19** + **TypeScript** + **Vite**
-- **TailwindCSS v4** with custom dark design tokens
-- **Recharts** for data visualization
-- **TanStack Query** for data fetching
-- **Sonner** for toast notifications
-- **Lucide React** for icons
-
-### Backend
-- **Express** REST API
-- **Prisma** ORM with **SQLite**
-- **JWT** authentication
-- **bcryptjs** password hashing
-- **Groq AI** for summaries, insights, and predictions
-
----
-
-## Tech Stack
-
-```
-Frontend    React 19 · TypeScript · Vite · TailwindCSS v4
-Charts      Recharts
-Auth        JWT · bcryptjs
-Backend     Express · Node.js
-Database    Prisma ORM · SQLite
-AI          Groq LLM (llama-3.3-70b-versatile)
-Icons       Lucide React
-Theme       Dark (#0A0A0A) + Lime Green (#BFFF00)
-```
-
----
+- Frontend: React 19, TypeScript, Vite, Tailwind CSS v4, TanStack Query, Recharts, Zustand, Sonner, Lucide React
+- Backend: Express, TypeScript, Prisma, SQLite, JWT, bcryptjs
+- AI: Groq API using `llama-3.3-70b-versatile`
 
 ## Project Structure
 
-```
+```text
 pennywise/
-├── frontend/                 ← React app
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── charts/     ← CategoryPieChart, DailyBarChart, TrendLineChart
-│   │   │   ├── layout/     ← AppLayout (sidebar + content)
-│   │   │   └── ui/         ← Button, Card, Input, Select, Modal, Badge, FAB, etc.
-│   │   ├── pages/           ← Landing, Dashboard, Transactions, Budget, Analytics, Settings, About
-│   │   ├── stores/          ← Auth Zustand store
-│   │   ├── hooks/           ← useQueries (TanStack Query hooks)
-│   │   ├── lib/             ← API client, utils, services
-│   │   └── types/           ← TypeScript interfaces
-│   └── package.json
-├── backend/                  ← Express API
-│   ├── src/
-│   │   ├── routes/          ← Auth, Transactions, Budget, Categories, Analytics, AI, Export
-│   │   ├── services/         ← Business logic
-│   │   ├── middleware/       ← JWT auth middleware
-│   │   └── lib/              ← Prisma client, utilities
-│   ├── prisma/
-│   │   └── schema.prisma     ← Database schema
-│   └── package.json
-├── SPEC.md                   ← Full specification
+├── frontend/
+│   └── src/
+│       ├── components/    # Layout, UI controls, modal, charts
+│       ├── hooks/         # Centralized TanStack Query hooks
+│       ├── lib/           # Axios client, API services, utilities
+│       ├── pages/         # Public, auth, and protected app screens
+│       ├── stores/         # Zustand auth store
+│       └── types/          # Shared frontend types
+├── backend/
+│   ├── prisma/            # Prisma schema and local SQLite database
+│   └── src/
+│       ├── routes/         # REST API routes
+│       ├── services/       # Database and AI business logic
+│       └── middleware/     # Auth and error middleware
+├── SPEC.md
 └── README.md
 ```
 
----
-
-## Getting Started
+## Local Setup
 
 ### Prerequisites
-- **Node.js** 18+
-- **npm** or **pnpm**
 
-### 1. Clone the repo
+- Node.js 18 or newer
+- npm
+- A Groq API key is optional. Core finance features work without it; AI buttons return an error until a key is configured.
 
-```bash
-git clone https://github.com/minhquan-maker/pennywise.git
-cd pennywise
-```
-
-### 2. Setup Backend
+### 1. Configure the backend
 
 ```bash
 cd backend
-cp .env.example .env   # Edit DATABASE_URL and JWT_SECRET
+cp .env.example .env
 npm install
 npx prisma generate
+npx prisma db push
 npm run dev
 ```
 
 The API runs at `http://localhost:3000`.
 
-### 3. Setup Frontend
+Edit `backend/.env` before using AI features:
+
+```env
+DATABASE_URL="file:./dev.db"
+JWT_SECRET="use-a-long-random-secret"
+GROQ_API_KEY="your-groq-api-key"
+PORT=3000
+ALLOWED_ORIGINS="http://localhost:5173,http://localhost:4173"
+```
+
+### 2. Configure the frontend
+
+In a second terminal:
 
 ```bash
 cd frontend
+cp .env.example .env
 npm install
 npm run dev
 ```
 
 The app runs at `http://localhost:5173`.
 
----
+The frontend template contains:
+
+```env
+VITE_API_URL=http://localhost:3000/api
+```
+
+### 3. Create an account
+
+Open the frontend URL, register an account, and start adding transactions. Each new account receives the default categories automatically. Custom categories can be created or deleted from Settings.
 
 ## Environment Variables
 
-### Backend (`backend/.env`)
+### Backend
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DATABASE_URL` | SQLite file path | `file:./dev.db` |
-| `JWT_SECRET` | Secret for JWT signing | `change-this` |
-| `GROQ_API_KEY` | Groq API key for AI features | _(required)_ |
-| `PORT` | Server port | `3000` |
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `DATABASE_URL` | SQLite database path | `file:./dev.db` |
+| `JWT_SECRET` | JWT signing secret | none; set a strong value |
+| `GROQ_API_KEY` | Enables AI summaries, suggestions, insights, and prediction | empty |
+| `PORT` | API port | `3000` |
+| `ALLOWED_ORIGINS` | Comma-separated frontend origins | localhost Vite origins |
 
-Get your Groq API key at [console.groq.com](https://console.groq.com) — free tier available.
+### Frontend
 
----
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `VITE_API_URL` | Backend API URL | `http://localhost:3000/api` |
 
-## Pages & Features
+Never commit `.env` files or API keys. Use the committed `.env.example` files as templates.
 
-### `/` — Landing Page
-Dark hero section with brand messaging, lime green CTA buttons, and a navigation link to sign up or log in.
+## Pages
 
-### `/about` — About Page
-Full dark-themed page showcasing all features in a 6-card grid, 4-step how-it-works section, Free/Pro pricing cards, and a call-to-action. Accessible from the sidebar after login.
+- `/` — Public product overview and sign-up entry point
+- `/about` — Features, workflow, pricing placeholder, and sign-up entry point
+- `/login` and `/register` — Authentication
+- `/dashboard` — Current-month spending overview and AI summary
+- `/transactions` — Search, filter, add, edit, delete, and clear transactions
+- `/budget` — Monthly category budgets and AI suggestions
+- `/analytics` — Six-month trend, category breakdown, and prediction
+- `/settings` — Profile, currency, category management, CSV export, data clearing, and account deletion
 
-### `/login` & `/register` — Auth Pages
-Dark full-page layout with a brand panel on the left and clean forms on the right. Neon lime "Get Started" buttons.
+## API Reference
 
-### `/dashboard` — Dashboard
-Financial snapshot: greeting header, stat cards (total spent, vs last month, categories), pie chart, 7-day bar chart, and AI monthly summary with regenerate button.
-
-### `/transactions` — Transactions
-Filter bar with search, month picker, and category dropdown. Transaction list with edit/delete on hover. Quick-add via floating action button (lime green FAB) with category picker, quick-amount chips, and date shortcuts.
-
-### `/budget` — Budget
-Monthly budget cards with visual progress bars per category. Color-coded status (lime = on track, amber = warning, red = over). "AI Suggest" button auto-populates budgets from spending history.
-
-### `/analytics` — Analytics
-6-month spending trend line chart, category breakdown with progress bars, and AI-powered spending prediction with reasoning.
-
-### `/settings` — Settings
-Update display name, currency (USD/VND), export data as CSV, clear all data, or delete account.
-
----
-
-## API Endpoints
+All protected endpoints require `Authorization: Bearer <token>`.
 
 ### Auth
+
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/auth/register` | Create account |
+| --- | --- | --- |
+| `POST` | `/api/auth/register` | Create an account and seed default categories |
 | `POST` | `/api/auth/login` | Sign in |
-| `GET` | `/api/auth/me` | Get current user |
-| `PUT` | `/api/auth/me` | Update profile |
-| `DELETE` | `/api/auth/me` | Delete account |
+| `GET` | `/api/auth/me` | Get the current user |
+| `PUT` | `/api/auth/me` | Update profile and currency |
+| `DELETE` | `/api/auth/me` | Delete the account and related data |
+
+### Categories
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/api/categories` | List the user's categories |
+| `POST` | `/api/categories` | Create a custom category |
+| `PUT` | `/api/categories/:id` | Update a category |
+| `DELETE` | `/api/categories/:id` | Delete a category |
 
 ### Transactions
+
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/transactions` | List transactions (filter by month/category/search) |
-| `POST` | `/api/transactions` | Create transaction |
-| `PUT` | `/api/transactions/:id` | Update transaction |
-| `DELETE` | `/api/transactions/:id` | Delete transaction |
-| `DELETE` | `/api/transactions/clear` | Clear all transactions |
+| --- | --- | --- |
+| `GET` | `/api/transactions?month=&category=&search=` | List filtered transactions |
+| `POST` | `/api/transactions` | Create a transaction |
+| `PUT` | `/api/transactions/:id` | Update a transaction |
+| `DELETE` | `/api/transactions/:id` | Delete a transaction |
+| `DELETE` | `/api/transactions/clear` | Delete all transactions |
 
 ### Budgets
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/budgets` | List budgets (by month) |
-| `PUT` | `/api/budgets` | Create/update budget |
-| `DELETE` | `/api/budgets/:id` | Delete budget |
-| `DELETE` | `/api/budgets/clear` | Clear all budgets |
 
-### Analytics
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/analytics/dashboard` | Dashboard data (totals, categories, daily) |
-| `GET` | `/api/analytics/trend` | 6-month trend data |
+| --- | --- | --- |
+| `GET` | `/api/budgets?month=` | List budgets |
+| `PUT` | `/api/budgets` | Create or update a monthly category budget |
+| `DELETE` | `/api/budgets/:id` | Delete a budget |
+| `DELETE` | `/api/budgets/clear` | Delete all budgets |
 
-### AI
+### Analytics, AI, and Export
+
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/ai/summary` | Monthly AI summary |
-| `POST` | `/api/ai/suggest-budget` | AI budget suggestions |
-| `POST` | `/api/ai/insight` | AI insight on a category |
-| `POST` | `/api/ai/predict` | Next-month spending prediction |
+| --- | --- | --- |
+| `GET` | `/api/analytics/dashboard?month=YYYY-MM` | Current-month totals and charts |
+| `GET` | `/api/analytics/trend?months=6` | Monthly trend data |
+| `POST` | `/api/ai/summary` | Generate a monthly summary |
+| `POST` | `/api/ai/suggest-budget` | Suggest category budgets |
+| `POST` | `/api/ai/insight` | Generate three spending insights |
+| `POST` | `/api/ai/predict` | Predict next-month spending |
+| `GET` | `/api/export/csv?month=YYYY-MM` | Download authenticated CSV data |
 
----
+## Development Checks
+
+```bash
+cd frontend && npx tsc --noEmit && npm run lint && npm run build
+cd ../backend && npx tsc --noEmit && npm run build
+```
 
 ## Design System
 
-| Element | Value |
-|---------|-------|
-| Background | `#0A0A0A` (near black) |
-| Surface | `#171717` (dark card) |
+| Token | Value |
+| --- | --- |
+| Background | `#0A0A0A` |
+| Surface | `#171717` |
 | Border | `#262626` |
-| Accent | `#BFFF00` (neon lime) |
-| Accent Hover | `#ADFF00` |
-| Text Primary | `#ffffff` |
-| Text Secondary | `#a3a3a3` |
-| Text Tertiary | `#737373` |
-
----
-
-## Social Links
-
-| Platform | Link |
-|----------|------|
-| GitHub | [minhquan-maker](https://github.com/minhquan-maker) |
-| LinkedIn | [ngminhquan](https://www.linkedin.com/in/ngminhquan/) |
-| Portfolio | [minhquan-maker.github.io](https://minhquan-maker.github.io) |
-
----
+| Accent | `#BFFF00` |
+| Accent hover | `#ADFF00` |
+| Primary text | `#FFFFFF` |
+| Secondary text | `#A3A3A3` |
 
 ## License
 
-MIT — built by [Nguyen Minh Quan](https://github.com/minhquan-maker)
+MIT — built by Nguyen Minh Quan.

@@ -14,9 +14,10 @@ import { toast } from 'sonner'
 export function AnalyticsPage() {
   const user = useAuthStore((s) => s.user)
   const currency = user?.currency || 'USD'
+  const month = getCurrentMonth()
 
   const { data: trend = [], isLoading: trendLoading } = useTrend(6)
-  const { data: dashboard, isLoading: dashboardLoading } = useDashboard(getCurrentMonth())
+  const { data: dashboard, isLoading: dashboardLoading } = useDashboard(month)
 
   const [prediction, setPrediction] = useState<{
     predicted: number

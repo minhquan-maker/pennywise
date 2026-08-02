@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth.store'
 import { cn } from '@/lib/utils'
 import {
@@ -21,7 +21,7 @@ const navItems = [
   { to: '/budget',        label: 'Budget',        icon: Target },
   { to: '/analytics',     label: 'Analytics',     icon: TrendingUp },
   { to: '/settings',      label: 'Settings',      icon: Settings },
-  { to: '/about',         label: 'About us',      icon: Home, external: true },
+  { to: '/about',         label: 'About us',      icon: Home },
 ]
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -86,40 +86,24 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          {navItems.map(({ to, label, icon: Icon, external }) => (
-            external ? (
-              <a
-                key={to}
-                href={to}
-                onClick={closeSidebar}
-                className={cn(
+          {navItems.map(({ to, label, icon: Icon }) => (
+            <NavLink
+              key={to}
+              to={to}
+              onClick={closeSidebar}
+              className={({ isActive }) =>
+                cn(
                   'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150',
-                  'text-text-secondary hover:bg-neutral-800 hover:text-white',
+                  isActive
+                    ? 'bg-neutral-800 text-primary-400'
+                    : 'text-text-secondary hover:bg-neutral-800 hover:text-white',
                   collapsed && 'justify-center'
-                )}
-              >
-                <Icon className="h-5 w-5 flex-shrink-0" />
-                <span className={cn(collapsed && labelHidden)}>{label}</span>
-              </a>
-            ) : (
-              <NavLink
-                key={to}
-                to={to}
-                onClick={closeSidebar}
-                className={({ isActive }) =>
-                  cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150',
-                    isActive
-                      ? 'bg-neutral-800 text-primary-400'
-                      : 'text-text-secondary hover:bg-neutral-800 hover:text-white',
-                    collapsed && 'justify-center'
-                  )
-                }
-              >
-                <Icon className={cn('h-5 w-5 flex-shrink-0', collapsed && 'h-5 w-5')} />
-                <span className={cn(collapsed && labelHidden)}>{label}</span>
-              </NavLink>
-            )
+                )
+              }
+            >
+              <Icon className={cn('h-5 w-5 flex-shrink-0')} />
+              <span className={cn(collapsed && labelHidden)}>{label}</span>
+            </NavLink>
           ))}
         </nav>
 

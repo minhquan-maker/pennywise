@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { User, Download, AlertTriangle, Trash2, Eraser } from 'lucide-react'
+import { User, Download, AlertTriangle, Trash2, Eraser, Tag, Plus } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -11,11 +11,20 @@ import { Badge } from '@/components/ui/Badge'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth.store'
 import { authService, clearService } from '@/lib/services'
+import { useCategories, useCreateCategory, useDeleteCategory } from '@/hooks/useQueries'
+import { cn } from '@/lib/utils'
+
+const PRESET_ICONS = ['🍔', '🚌', '🛍️', '🎬', '📄', '💊', '💰', '🏠', '✈️', '📱', '🎮', '☕', '🛒', '🏋️', '📚', '🎁']
+const PRESET_COLORS = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6', '#f97316', '#06b6d4']
 
 export function SettingsPage() {
   const { user, updateUser, logout } = useAuthStore()
   const navigate = useNavigate()
   const qc = useQueryClient()
+
+  const { data: categories = [], isLoading: categoriesLoading } = useCategories()
+  const createCategory = useCreateCategory()
+  const deleteCategory = useDeleteCategory()
 
   const [name, setName] = useState(user?.name || '')
   const [currency, setCurrency] = useState(user?.currency || 'USD')
@@ -23,6 +32,10 @@ export function SettingsPage() {
   const [confirmText, setConfirmText] = useState('')
   const [clearOpen, setClearOpen] = useState(false)
   const [clearConfirm, setClearConfirm] = useState('')
+  const [catModalOpen, setCatModalOpen] = useState(false)
+  const [newCatName, setNewCatName] = useState('')
+  const [newCatIcon, setNewCatIcon] = useState(PRESET_ICONS[0])
+  const [newCatColor, setNewCatColor] = useState(PRESET_COLORS[0])
 
   const updateMe = useMutation({
     mutationFn: (data: { name?: string; currency?: string }) => authService.updateMe(data),
@@ -61,13 +74,44 @@ export function SettingsPage() {
     updateMe.mutate({ name, currency })
   }
 
-  const handleExportCSV = () => {
-    window.open('/api/export/csv', '_blank')
+  const handleExportCSV = async () => {
+    try {
+      const blob = await clearService.exportCSV()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `pennywise-export-${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      a.remove()
+      toast.success('CSV downloaded')
+    } catch {
+      toast.error('Failed to export CSV')
+    }
   }
 
   const handleDeleteAccount = () => {
     if (confirmText !== user?.email) return
     deleteMe.mutate()
+  }
+
+  const handleCreateCategory = () => {
+    if (!newCatName.trim()) {
+      toast.error('Category name is required')
+      return
+    }
+    createCategory.mutate(
+      { name: newCatName.trim(), icon: newCatIcon, color: newCatColor },
+      {
+        onSuccess: () => {
+          setCatModalOpen(false)
+          setNewCatName('')
+          setNewCatIcon(PRESET_ICONS[0])
+          setNewCatColor(PRESET_COLORS[0])
+        },
+      }
+    )
   }
 
   return (
@@ -108,6 +152,72 @@ export function SettingsPage() {
             Save Changes
           </Button>
         </div>
+      </Card>
+
+      {/* Categories section */}
+      <Card variant="dark" padding="lg">
+        <Card.Header>
+          <div className="flex items-center justify-between w-full gap-3">
+            <div className="flex items-center gap-2">
+              <Tag className="h-4 w-4 text-primary-400" />
+              <h2 className="text-lg font-bold text-white">Categories</h2>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              icon={<Plus className="h-3.5 w-3.5" />}
+              onClick={() => setCatModalOpen(true)}
+            >
+              Add
+            </Button>
+          </div>
+        </Card.Header>
+        <p className="text-sm text-text-secondary mb-4">
+          Organize your transactions with custom categories.
+        </p>
+        {categoriesLoading ? (
+          <div className="text-sm text-text-tertiary">Loading categories...</div>
+        ) : categories.length === 0 ? (
+          <div className="text-center py-8 text-text-tertiary text-sm">
+            No categories yet. Add one to get started.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {categories.map((cat) => (
+              <div
+                key={cat.id}
+                className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border border-[#262626] bg-neutral-800"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: `${cat.color}26` }}
+                  >
+                    <span className="text-sm">{cat.icon}</span>
+                  </span>
+                  <span className="text-sm text-white truncate">{cat.name}</span>
+                  {cat.isDefault && (
+                    <Badge label="Default" color="#737373" variant="soft" size="sm" />
+                  )}
+                </div>
+                {!cat.isDefault && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    iconOnly
+                    icon={<Trash2 className="h-3.5 w-3.5" />}
+                    onClick={() => {
+                      if (confirm(`Delete category "${cat.name}"?`)) {
+                        deleteCategory.mutate(cat.id)
+                      }
+                    }}
+                    className="!w-8 !h-8 !p-0 !text-text-tertiary hover:!text-danger-500 hover:!bg-neutral-700"
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
 
       {/* Data Export section */}
@@ -237,6 +347,109 @@ export function SettingsPage() {
           >
             Clear All Data
           </Button>
+        </div>
+      </Modal>
+
+      {/* New Category Modal */}
+      <Modal
+        isOpen={catModalOpen}
+        onClose={() => {
+          setCatModalOpen(false)
+          setNewCatName('')
+          setNewCatIcon(PRESET_ICONS[0])
+          setNewCatColor(PRESET_COLORS[0])
+        }}
+        title="Add Category"
+        size="md"
+        footer={
+          <div className="flex gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => setCatModalOpen(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="gradient"
+              onClick={handleCreateCategory}
+              isLoading={createCategory.isPending}
+              disabled={!newCatName.trim()}
+              className="flex-1"
+            >
+              Create
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-text-secondary">Category Name</label>
+            <Input
+              value={newCatName}
+              onChange={(e) => setNewCatName(e.target.value)}
+              placeholder="e.g. Coffee, Gym, Travel"
+              variant="filled"
+              maxLength={30}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-text-secondary">Icon</label>
+            <div className="grid grid-cols-8 gap-1.5">
+              {PRESET_ICONS.map((icon) => (
+                <button
+                  key={icon}
+                  type="button"
+                  onClick={() => setNewCatIcon(icon)}
+                  className={cn(
+                    'w-full aspect-square rounded-lg flex items-center justify-center text-lg transition-all',
+                    newCatIcon === icon
+                      ? 'bg-primary-500/20 border-2 border-primary-500'
+                      : 'bg-neutral-800 border-2 border-transparent hover:border-neutral-600'
+                  )}
+                >
+                  {icon}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-text-secondary">Color</label>
+            <div className="grid grid-cols-5 gap-1.5">
+              {PRESET_COLORS.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => setNewCatColor(color)}
+                  className={cn(
+                    'w-full aspect-square rounded-lg transition-all',
+                    newCatColor === color
+                      ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-900'
+                      : 'hover:scale-110'
+                  )}
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Preview */}
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-neutral-800 border border-[#262626]">
+            <span
+              className="w-9 h-9 rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: `${newCatColor}26` }}
+            >
+              <span className="text-lg">{newCatIcon}</span>
+            </span>
+            <div>
+              <span className="text-sm font-semibold text-white">
+                {newCatName || 'Category Name'}
+              </span>
+              <p className="text-xs text-text-tertiary">Preview</p>
+            </div>
+          </div>
         </div>
       </Modal>
     </div>
