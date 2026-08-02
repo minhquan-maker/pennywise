@@ -45,7 +45,20 @@ categoryRouter.put('/:id', async (req, res, next) => {
 
 categoryRouter.delete('/:id', async (req, res, next) => {
   try {
-    await categoryService.delete(req.params.id, req.userId!)
+    try {
+      await categoryService.delete(req.params.id, req.userId!)
+    } catch (err) {
+      const msg = (err as Error).message
+      if (
+        msg === 'Category not found' ||
+        msg === 'Cannot delete default categories' ||
+        msg.startsWith('Cannot delete category')
+      ) {
+        res.status(400).json({ error: msg })
+        return
+      }
+      throw err
+    }
     res.json({ message: 'Category deleted' })
   } catch (err) {
     next(err)

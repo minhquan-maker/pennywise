@@ -4,14 +4,26 @@ import { userService } from '../services/user.service.js'
 import { categoryService } from '../services/category.service.js'
 import { authMiddleware } from '../middleware/auth.middleware.js'
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 export const authRouter = Router()
 
 authRouter.post('/register', async (req, res, next) => {
   try {
-    const { email, password, name } = req.body
+    const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : ''
+    const password = typeof req.body.password === 'string' ? req.body.password : ''
+    const name = typeof req.body.name === 'string' ? req.body.name.trim() : ''
 
     if (!email || !password || !name) {
       res.status(400).json({ error: 'Email, password, and name are required' })
+      return
+    }
+    if (!EMAIL_REGEX.test(email)) {
+      res.status(400).json({ error: 'Please enter a valid email address' })
+      return
+    }
+    if (password.length < 8) {
+      res.status(400).json({ error: 'Password must be at least 8 characters' })
       return
     }
 
@@ -36,7 +48,8 @@ authRouter.post('/register', async (req, res, next) => {
 
 authRouter.post('/login', async (req, res, next) => {
   try {
-    const { email, password } = req.body
+    const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : ''
+    const password = typeof req.body.password === 'string' ? req.body.password : ''
 
     if (!email || !password) {
       res.status(400).json({ error: 'Email and password are required' })
@@ -74,7 +87,16 @@ authRouter.get('/me', authMiddleware, async (req, res, next) => {
 
 authRouter.put('/me', authMiddleware, async (req, res, next) => {
   try {
-    const { name, currency } = req.body
+    const name = typeof req.body.name === 'string' ? req.body.name.trim() : undefined
+    const currency = typeof req.body.currency === 'string' ? req.body.currency.trim().toUpperCase() : undefined
+    if (name !== undefined && !name) {
+      res.status(400).json({ error: 'Name cannot be empty' })
+      return
+    }
+    if (currency !== undefined && !['USD', 'VND'].includes(currency)) {
+      res.status(400).json({ error: 'Currency must be USD or VND' })
+      return
+    }
     const user = await userService.update(req.userId!, { name, currency })
     res.json({ user })
   } catch (err) {

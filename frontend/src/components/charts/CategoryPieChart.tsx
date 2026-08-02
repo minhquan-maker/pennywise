@@ -1,17 +1,18 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
+import { formatCurrency } from '@/lib/utils'
 
 interface CategoryPieChartProps {
   data: { name: string; value: number; icon: string; color: string }[]
+  currency?: string
 }
 
-export function CategoryPieChart({ data }: CategoryPieChartProps) {
+export function CategoryPieChart({ data, currency = 'USD' }: CategoryPieChartProps) {
   if (!data.length) return <p className="text-sm text-slate-400 text-center py-8">No data yet</p>
 
   const total = data.reduce((sum, d) => sum + d.value, 0)
 
   return (
     <div>
-      {/* Donut chart with centered total */}
       <div className="relative">
         <ResponsiveContainer width="100%" height={280}>
           <PieChart>
@@ -30,20 +31,18 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
               ))}
             </Pie>
             <Tooltip
-              formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Spent']}
+              formatter={(value) => [formatCurrency(Number(value), currency), 'Spent']}
               contentStyle={{ borderRadius: 8, backgroundColor: '#171717', border: '1px solid #262626', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', color: '#fff' }}
             />
           </PieChart>
         </ResponsiveContainer>
 
-        {/* Center donut label */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-2xl font-bold text-white">${total.toFixed(2)}</span>
+          <span className="text-2xl font-bold text-white">{formatCurrency(total, currency)}</span>
           <span className="text-xs text-text-tertiary">Total</span>
         </div>
       </div>
 
-      {/* Custom legend */}
       <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-4">
         {data.map((entry, index) => {
           const pct = total > 0 ? ((entry.value / total) * 100).toFixed(0) : '0'

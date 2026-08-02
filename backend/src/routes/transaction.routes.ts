@@ -47,9 +47,9 @@ transactionRouter.post('/', async (req, res, next) => {
     }
 
     // Validate amount
-    const parsedAmount = parseFloat(amount)
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      res.status(400).json({ error: 'amount must be a positive number' })
+    const parsedAmount = parseFloat(String(amount))
+    if (isNaN(parsedAmount) || parsedAmount <= 0 || !Number.isFinite(parsedAmount)) {
+      res.status(400).json({ error: 'amount must be a positive finite number' })
       return
     }
 

@@ -140,6 +140,7 @@ export function DashboardPage() {
                   icon: c.icon,
                   color: c.color,
                 }))}
+                currency={currency}
               />
             )}
           </Card.Body>
@@ -153,7 +154,7 @@ export function DashboardPage() {
             {isLoading ? (
               <Skeleton variant="rectangular" className="w-full h-56" />
             ) : (
-              <DailyBarChart data={dashboard?.last7Days || []} />
+              <DailyBarChart data={dashboard?.last7Days || []} currency={currency} />
             )}
           </Card.Body>
         </Card>
@@ -176,7 +177,7 @@ export function DashboardPage() {
             {aiSummary ? 'Regenerate' : 'Generate'}
           </Button>
         </Card.Header>
-        <Card.Body variant="dark">
+        <Card.Body>
           {aiLoading && (
             <div className="space-y-2">
               <Skeleton variant="text" className="w-full" />

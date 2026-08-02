@@ -7,13 +7,13 @@ export const analyticsService = {
     const targetMonth = month ? parseInt(month.split('-')[1]) - 1 : now.getMonth()
 
     const startOfMonth = new Date(targetYear, targetMonth, 1)
-    const endOfMonth = new Date(targetYear, targetMonth + 1, 0)
+    const endOfMonth = new Date(targetYear, targetMonth + 1, 1)
 
     // Fix January boundary: prevMonth could be 11 (Dec) of previous year
     const prevMonth = targetMonth === 0 ? 11 : targetMonth - 1
     const prevYear = targetMonth === 0 ? targetYear - 1 : targetYear
     const startOfPrevMonth = new Date(prevYear, prevMonth, 1)
-    const endOfPrevMonth = new Date(prevYear, prevMonth + 1, 0)
+    const endOfPrevMonth = new Date(prevYear, prevMonth + 1, 1)
 
     // Fetch both months in one query
     const allTxns = await prisma.transaction.findMany({
@@ -21,17 +21,17 @@ export const analyticsService = {
         userId,
         date: {
           gte: startOfPrevMonth,
-          lte: endOfMonth,
+          lt: endOfMonth,
         },
       },
       include: { category: true },
     })
 
     const thisMonthTxns = allTxns.filter(
-      (t) => t.date >= startOfMonth && t.date <= endOfMonth
+      (t) => t.date >= startOfMonth && t.date < endOfMonth
     )
     const prevMonthTxns = allTxns.filter(
-      (t) => t.date >= startOfPrevMonth && t.date <= endOfPrevMonth
+      (t) => t.date >= startOfPrevMonth && t.date < endOfPrevMonth
     )
 
     const thisMonthTotal = thisMonthTxns.reduce((sum, t) => sum + t.amount, 0)

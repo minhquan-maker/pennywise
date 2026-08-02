@@ -133,7 +133,7 @@ export function AnalyticsPage() {
             <p className="text-text-tertiary text-sm">Not enough data for a trend yet</p>
           </div>
         ) : (
-          <TrendLineChart data={trend} />
+          <TrendLineChart data={trend} currency={currency} />
         )}
       </Card>
 

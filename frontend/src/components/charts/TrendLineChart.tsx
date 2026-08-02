@@ -1,7 +1,9 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area } from 'recharts'
+import { formatCurrency } from '@/lib/utils'
 
 interface TrendLineChartProps {
   data: { month: string; total: number }[]
+  currency?: string
 }
 
 const axisStyle = { fontSize: 12, fill: '#a3a3a3' }
@@ -12,7 +14,7 @@ function formatMonth(monthStr: string) {
   return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
 }
 
-export function TrendLineChart({ data }: TrendLineChartProps) {
+export function TrendLineChart({ data, currency = 'USD' }: TrendLineChartProps) {
   if (!data.length) return <p className="text-sm text-slate-400 text-center py-8">No data yet</p>
 
   const min = Math.min(...data.map((d) => d.total))
@@ -42,10 +44,10 @@ export function TrendLineChart({ data }: TrendLineChartProps) {
           tick={axisStyle}
           axisLine={false}
           tickLine={false}
-          tickFormatter={(v) => `$${v}`}
+          tickFormatter={(v) => formatCurrency(Number(v), currency)}
         />
         <Tooltip
-          formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Total']}
+          formatter={(value) => [formatCurrency(Number(value), currency), 'Total']}
           labelFormatter={(label) => formatMonth(String(label))}
           contentStyle={{ backgroundColor: '#171717', border: '1px solid #262626', borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.3)', color: '#fff' }}
         />

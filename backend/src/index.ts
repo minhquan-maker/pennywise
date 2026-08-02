@@ -10,10 +10,17 @@ import { analyticsRouter } from './routes/analytics.routes.js'
 import { aiRouter } from './routes/ai.routes.js'
 import { exportRouter } from './routes/export.routes.js'
 
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET must be set')
+}
+
 const app = express()
 const PORT = process.env.PORT || 3000
 
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:4173').split(',')
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:4173')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean)
 
 app.use(cors({
   origin: allowedOrigins,

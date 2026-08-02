@@ -24,7 +24,7 @@ exportRouter.get('/csv', async (req, res, next) => {
         const name = t.category.name
         const amount = currency === 'VND' ? t.amount.toLocaleString() : t.amount.toFixed(2)
         const note = (t.note || '').replace(/"/g, '""')
-        return `"${date}","${name}",${amount},"${note}"`
+        return `"${date}","${name}","${amount}","${note}"`
       })
       .join('\n')
 

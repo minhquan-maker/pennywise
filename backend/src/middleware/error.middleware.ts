@@ -7,5 +7,13 @@ export const errorHandler = (
   _next: NextFunction
 ) => {
   console.error('[Error]', err.message)
-  res.status(500).json({ error: err.message || 'Internal server error' })
+
+  const code = (err as { statusCode?: number }).statusCode || 500
+  const safeStatus = code >= 400 && code < 600 ? code : 500
+
+  if (safeStatus >= 500) {
+    res.status(safeStatus).json({ error: 'Internal server error' })
+  } else {
+    res.status(safeStatus).json({ error: err.message || 'Bad request' })
+  }
 }

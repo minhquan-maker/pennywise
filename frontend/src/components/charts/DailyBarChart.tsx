@@ -1,7 +1,9 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { formatCurrency } from '@/lib/utils'
 
 interface DailyBarChartProps {
   data: { date: string; total: number }[]
+  currency?: string
 }
 
 const axisStyle = { fontSize: 12, fill: '#a3a3a3' }
@@ -11,7 +13,7 @@ function formatDate(dateStr: string) {
   return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })
 }
 
-export function DailyBarChart({ data }: DailyBarChartProps) {
+export function DailyBarChart({ data, currency = 'USD' }: DailyBarChartProps) {
   if (!data.length) return <p className="text-sm text-slate-400 text-center py-8">No data yet</p>
 
   return (
@@ -35,10 +37,10 @@ export function DailyBarChart({ data }: DailyBarChartProps) {
           tick={axisStyle}
           axisLine={false}
           tickLine={false}
-          tickFormatter={(v) => `$${v}`}
+          tickFormatter={(v) => formatCurrency(Number(v), currency)}
         />
         <Tooltip
-          formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Spent']}
+          formatter={(value) => [formatCurrency(Number(value), currency), 'Spent']}
           labelFormatter={(label) => formatDate(String(label))}
           contentStyle={{ backgroundColor: '#171717', border: '1px solid #262626', borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.3)', color: '#fff' }}
         />

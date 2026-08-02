@@ -2,100 +2,126 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Project Overview
+
+AI-powered personal finance tracker. Track expenses, set budgets, and get Groq AI insights. Dark theme with lime green accents.
+
 ## Development Commands
 
-Both apps run concurrently (frontend on :5173, backend on :3000).
-
 ```bash
-# Backend
+# Backend (runs on :3000)
 cd backend && npm install && npx prisma generate && npm run dev
 
-# Frontend
+# Frontend (runs on :5173)
 cd frontend && npm install && npm run dev
 
-# Production build (frontend only)
-cd frontend && npm run build
+# Database tools (from backend/)
+cd backend && npx prisma studio    # Visual DB editor
+cd backend && npx prisma db push   # Push schema changes
+cd backend && npx prisma db seed  # Seed default categories
+
+# Type check
+cd frontend && npx tsc --noEmit
+cd backend && npx tsc --noEmit
 ```
 
-After `prisma generate`, restart the backend dev server.
+## Environment Variables
+
+**Backend `backend/.env`**:
+- `DATABASE_URL=file:./dev.db` — SQLite path
+- `JWT_SECRET` — JWT signing secret
+- `GROQ_API_KEY` — Groq API key (get from console.groq.com). Without this, AI features return errors.
+- `PORT=3000`
+- `ALLOWED_ORIGINS` — comma-separated CORS origins (default: `http://localhost:5173,http://localhost:4173`)
+
+**Frontend `frontend/.env`**:
+- `VITE_API_URL=http://localhost:3000/api`
 
 ## Architecture
 
-### Dual-repo in one
-`frontend/` and `backend/` are independently deployed. The frontend proxies API calls to the backend. Both must run simultaneously during development.
+### Frontend
 
-### Frontend — React + Vite + Tailwind v4
+- **Framework:** React 19 + Vite + TypeScript + React Router v6
+- **Styling:** Tailwind CSS v4 with CSS variables (theme in `frontend/src/index.css`). Design tokens: lime green primary (`#BFFF00`), dark neutral backgrounds.
+- **State:** Zustand (auth store only) + TanStack Query (all server state)
+- **API client:** `frontend/src/lib/axios.ts` — Axios with JWT interceptor (auto-attaches Bearer token) and 401 auto-logout interceptor.
 
-**TanStack Query pattern**: All data fetching goes through hook wrappers in `src/hooks/useQueries.ts`. Each mutation auto-invalidates relevant query keys and shows a toast. Do not call `queryClient` directly in page components — extend the hooks instead.
+**TanStack Query pattern** — All mutations follow this exact shape:
 
-Query keys used:
-- `['auth']` — login/register response cache
-- `['categories']` — category list
-- `['transactions', filters]` — filtered transactions
-- `['budgets', month]` — budgets by month
-- `['dashboard', month]` — dashboard stats (lazy — `enabled: false`, must `.refetch()`)
-- `['trend', months]` — 6-month trend
-
-**Auth store** (`src/stores/auth.store.ts`): Zustand store holding `token` and `user`. Components subscribe with `useAuthStore(s => s.user)`.
-
-**Routing**: `src/App.tsx` — unauthenticated users see LandingPage at `/`, authenticated users go to Dashboard. Protected routes wrapped in `<AppLayout>`. Page transitions use `key={location.pathname}` for fade-in.
-
-**Landing page**: `src/pages/LandingPage.tsx` — public marketing page. On mount, redirects logged-in users to `/dashboard`.
-
-### Backend — Express + Prisma + SQLite
-
-All routes are under `/api/`. Protected routes use `authMiddleware` which attaches `req.userId` from JWT.
-
-**Route files** (`src/routes/`): Each entity has its own router. Middleware is applied at router level with `router.use(authMiddleware)`.
-
-**Service files** (`src/services/`): Business logic lives here, imported by routes.
-
-### Design System — TailwindCSS v4
-
-Design tokens are defined as CSS custom properties in `frontend/src/index.css` under `@theme {}`. **Do not use a `tailwind.config.js` file** — Tailwind v4 reads from `@theme` directly.
-
-Key tokens:
-```css
---color-primary-500: #3B82F6 (blue accent)
---color-primary-600: #1D4ED8 (primary action)
---color-surface-0: #FFFFFF  --color-surface-50: #FAFBFC
---color-text-primary: #111827  --color-text-secondary: #6B7280
---shadow-sm/md/lg  --radius-lg/xl/2xl
+```ts
+const mutation = useMutation({
+  mutationFn: service.method,
+  onSuccess: () => {
+    qc.invalidateQueries({ queryKey: ['key'] })  // always invalidate
+  },
+  onError: () => toast.error('...')
+})
 ```
 
-**Animation utilities**: `.animate-stagger` on a parent, `.animate-fade-in` for pages, `.animate-scale-in` for modals. `.skeleton` for loading placeholders.
+Query hooks are centralized in `frontend/src/hooks/useQueries.ts`. Import from there, do NOT create inline hooks.
 
-**Landing page** uses dark theme (inline `#0A0A0A` / `#171717`) and lime green `#BFFF00` accents — these are NOT in the token system, use inline styles.
+**Routing:** `App.tsx` sets up `QueryClientProvider` → `BrowserRouter` → `Toaster` (sonner) → `ProtectedRoute`. `ProtectedRoute` checks `useAuthStore` token; redirects to `/login` if absent. `AppLayout` provides sidebar navigation.
 
-### Components
+### Backend
 
-UI primitives in `src/components/ui/`: Button (8 variants), Card (4 variants), Input (filled/default), Select, Modal (animated), Badge, Spinner, Skeleton, FloatingActionButton, TransactionModal.
+- **Framework:** Express + TypeScript (tsx for dev) + Prisma
+- **Database:** SQLite (`backend/prisma/dev.db`)
+- **Auth:** JWT (jsonwebtoken). Middleware at `src/middleware/auth.middleware.ts` attaches `req.userId`.
+- **AI:** Groq API (`llama-3.3-70b-versatile`) via `src/services/ai.service.ts`. Requires `GROQ_API_KEY` env var.
+- **Error handling:** Global `errorHandler` middleware — all errors return `{ error: string }`.
 
-Reusable chart components in `src/components/charts/`: CategoryPieChart, DailyBarChart, TrendLineChart. All accept typed data arrays and use Recharts.
+### API Design
 
-## Key Patterns
+All routes under `/api`. Response shape on error: `{ error: string }`. Success responses return data directly (no wrapper). Protected routes require `Authorization: Bearer <token>` header.
 
-### Adding a new page
-1. Create page component in `src/pages/`
-2. Add route in `src/App.tsx` inside `<ProtectedRoute>`
-3. If it needs transactions/budgets/categories, use hooks from `src/hooks/useQueries.ts`
-4. If it needs new mutations, add to the same file following the existing pattern
+**Auth routes:**
+- `POST /api/auth/register` → `{ token, user }`
+- `POST /api/auth/login` → `{ token, user }`
+- `GET /api/auth/me` → `{ user }`
+- `PUT /api/auth/me` → `{ user }`
+- `DELETE /api/auth/me` → `{ message }`
 
-### Adding a new API endpoint
-1. Add route in the appropriate `backend/src/routes/` file
-2. Add service function in `backend/src/services/`
-3. Add service call in `frontend/src/lib/services.ts`
-4. Add hook wrapper in `frontend/src/hooks/useQueries.ts`
-5. Invalidate relevant query keys on mutation success
+**Transaction routes:**
+- `GET /api/transactions?month=&category=&search=` → `{ transactions }`
+- `POST /api/transactions` → `{ transaction }`
+- `PUT /api/transactions/:id` → `{ transaction }`
+- `DELETE /api/transactions/:id` → `{ message }`
+- `DELETE /api/transactions/clear` → `{ message }`
 
-### Modal pattern
-`TransactionModal` is used by TransactionsPage — it's passed as a separate component, opened by the FloatingActionButton. For page-specific modals, inline them in the page component using the `<Modal>` primitive.
+**Budget routes:**
+- `GET /api/budgets?month=` → `{ budgets }`
+- `PUT /api/budgets` (upsert) → `{ budget }`
+- `DELETE /api/budgets/:id` → `{ message }`
+- `DELETE /api/budgets/clear` → `{ message }`
 
-## Database
+**Analytics routes:**
+- `GET /api/analytics/dashboard?month=YYYY-MM` → `DashboardData`
+- `GET /api/analytics/trend?months=N` → `{ trend }`
 
-Prisma schema at `backend/prisma/schema.prisma`. Run `npx prisma studio` to inspect the SQLite database during development.
+**AI routes (all require body `{ month: "YYYY-MM" }` unless noted):**
+- `POST /api/ai/summary` → `{ summary }`
+- `POST /api/ai/suggest-budget` → `{ suggestions }`
+- `POST /api/ai/insight` → `{ insights }`
+- `POST /api/ai/predict` (no body) → `{ predicted, changePercent, reason }`
 
-## Environment
+**Export routes:**
+- `GET /api/export/csv` → CSV file download
 
-`backend/.env` — never commit this. Required vars: `DATABASE_URL`, `JWT_SECRET`, `GROQ_API_KEY`.
-`frontend/.env` — `VITE_API_URL=http://localhost:3000/api`
+**Category routes:**
+- `GET /api/categories` → categories list
+- `POST /api/categories` → create category
+- `PUT /api/categories/:id` → update category
+- `DELETE /api/categories/:id` → delete category
+
+### Data Model (Prisma/SQLite)
+
+`User` → has many `Category`, `Transaction`, `Budget`. `Transaction` and `Budget` belong to a `Category`. Budget has `@@unique([userId, categoryId, month])` — one budget per category per month.
+
+Default categories seeded on first run via `prisma/seed.ts`.
+
+## Design System
+
+- **Primary:** `#BFFF00` (lime green)
+- **Background:** `#0A0A0A` (near-black)
+- **Card variant:** `variant="dark"` for dark-themed cards, `variant="elevated"` for elevated surfaces.
+- **Fonts:** Inter (Google Fonts), loaded via `index.css`.

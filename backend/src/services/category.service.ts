@@ -41,6 +41,17 @@ export const categoryService = {
   },
 
   async delete(id: string, userId: string) {
+    const category = await prisma.category.findFirst({ where: { id, userId } })
+    if (!category) throw new Error('Category not found')
+
+    if (category.isDefault) throw new Error('Cannot delete default categories')
+
+    const txCount = await prisma.transaction.count({ where: { categoryId: id } })
+    if (txCount > 0) {
+      throw new Error(`Cannot delete category "${category.name}" — ${txCount} transaction(s) still use it. Reassign or delete them first.`)
+    }
+
+    await prisma.budget.deleteMany({ where: { categoryId: id, userId } })
     return prisma.category.delete({ where: { id, userId } })
   },
 }

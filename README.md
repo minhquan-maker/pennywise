@@ -44,7 +44,8 @@ pennywise/
 │       ├── routes/         # REST API routes
 │       ├── services/       # Database and AI business logic
 │       └── middleware/     # Auth and error middleware
-├── SPEC.md
+├── assets/                # Supporting design and progress notes
+├── CLAUDE.md
 └── README.md
 ```
 
