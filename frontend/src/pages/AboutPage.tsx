@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
+import { useScrollReveal } from '@/hooks/useScrollReveal'
 
 const features = [
   {
@@ -84,6 +85,11 @@ const steps = [
 ]
 
 export function AboutPage() {
+  const featuresReveal = useScrollReveal({ stagger: 80 })
+  const stepsReveal = useScrollReveal({ stagger: 100 })
+  const pricingReveal = useScrollReveal({ stagger: 150 })
+  const ctaReveal = useScrollReveal()
+
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
 
@@ -145,7 +151,10 @@ export function AboutPage() {
               Simple, powerful tools designed to make financial tracking effortless and even enjoyable.
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div
+            ref={featuresReveal}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
             {features.map((f) => (
               <div
                 key={f.title}
@@ -173,7 +182,10 @@ export function AboutPage() {
               No spreadsheets. No complexity. Just you and your money.
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div
+            ref={stepsReveal}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+          >
             {steps.map((s) => (
               <div key={s.num} className="text-center lg:text-left">
                 <div className="text-5xl font-extrabold text-[#262626] mb-4 select-none">{s.num}</div>
@@ -194,7 +206,10 @@ export function AboutPage() {
           <p className="text-text-secondary mb-12">
             Start free. Upgrade when you need more.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
+          <div
+            ref={pricingReveal}
+            className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl mx-auto"
+          >
             {/* Free */}
             <div className="p-8 rounded-2xl bg-[#171717] border border-[#262626] text-left">
               <div className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">Free</div>
@@ -246,7 +261,10 @@ export function AboutPage() {
 
       {/* CTA */}
       <section className="px-6 lg:px-12 py-20 border-t border-[#262626]">
-        <div className="max-w-2xl mx-auto text-center">
+        <div
+          ref={ctaReveal}
+          className="max-w-2xl mx-auto text-center"
+        >
           <h2 className="text-3xl lg:text-4xl font-extrabold text-white mb-5">
             Ready to take control?
           </h2>
