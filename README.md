@@ -2,6 +2,10 @@
 
 PennyWise is an AI-powered personal finance tracker for recording expenses, managing monthly budgets, understanding spending patterns, and getting practical AI insights. It uses a dark interface with lime accents and supports USD and VND.
 
+> [!NOTE]
+> This project is in maintenance mode and no longer reflects current active work.
+> See [myportfolio](https://github.com/minhquan-maker/myportfolio) or [flood-rescue-cv](https://github.com/minhquan-maker/flood-rescue-cv) for current projects.
+
 ## Features
 
 - JWT authentication with bcrypt password hashing
