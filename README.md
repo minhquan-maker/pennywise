@@ -8,6 +8,7 @@ PennyWise is an AI-powered personal finance tracker for recording expenses, mana
 
 ## Features
 
+- Pair Extraordinaire demo: this repo demonstrates a co-authored commit.
 - JWT authentication with bcrypt password hashing
 - Expense tracking with categories, notes, dates, search, filters, edit, and delete
 - Custom categories with selectable icons and colors
