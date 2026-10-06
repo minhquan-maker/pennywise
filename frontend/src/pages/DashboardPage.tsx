@@ -288,8 +288,9 @@ export function DashboardPage() {
                   {d.budget.items.slice(0, 5).map((b) => (
                     <li key={b.id}>
                       <div className="mb-1.5 flex items-center justify-between gap-2 text-sm">
-                        <span className="truncate text-text-primary">
-                          {b.icon} {b.name}
+                        <span className="flex min-w-0 items-center gap-2 text-text-primary">
+                          <CategoryIcon icon={b.icon} color={b.color} size="xs" />
+                          <span className="truncate">{b.name}</span>
                         </span>
                         <span className="num text-xs text-text-secondary">
                           {fmt(b.spent)} <span className="text-text-tertiary">/ {fmt(b.amount)}</span>

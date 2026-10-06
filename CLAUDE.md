@@ -135,6 +135,7 @@ Default expense + income categories are seeded idempotently by `categoryService.
 
 - **Palette:** bg `#0B0C0F`, surface `#121418` / `#191B20` / `#20232A`, line `#262A31`, accent mint `#3DD9A0` (`primary-500`), cream `#F1F0E8` for light marketing sections, `forest` `#0D1B17` text on light/mint. Avoid saturated neon or green-tinted surfaces — the user found them too harsh.
 - **Type:** Anton via `.display` (uppercase headlines), Inter body, `.num` for tabular figures, `.eyebrow` for small caps labels.
+- **Icons:** Lucide line icons only — no emoji. Category icons are stored as keys (`utensils`, `bus`, …) from `frontend/src/lib/categoryIcons.ts` and rendered by `CategoryIcon`; legacy emoji values are mapped on read and default categories are upgraded server-side.
 - **Shapes:** pill buttons (`rounded-full`), cards `rounded-[var(--radius-2xl)]`, sheets `--radius-3xl`; glowing ring `Orb`/`ScoreRing`.
 - **Charts/categories:** colours from a CVD-validated categorical order (`#3987e5, #d95926, #199e70, #c98500, #d55181, #9085e9`); income `#3DD9A0` vs spending `#d95926`. One y-axis per chart, legend for ≥2 series.
 - **Deploy:** API via `backend/Dockerfile` (`npm run start:prod` = `prisma db push` + start, SQLite on a `/data` volume); web on Vercel from `frontend/`.

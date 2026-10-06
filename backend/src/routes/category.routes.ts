@@ -15,9 +15,14 @@ function cleanName(value: unknown): string | null {
   return name || null
 }
 
+// Icons are registry keys like "shopping-cart"; short emoji are still accepted for older clients
+const ICON_KEY_REGEX = /^[a-z0-9-]{1,32}$/
+
 function cleanIcon(value: unknown): string | null {
   if (typeof value !== 'string' || !value.trim()) return null
-  return [...value.trim()].slice(0, 2).join('')
+  const v = value.trim()
+  if (ICON_KEY_REGEX.test(v)) return v
+  return [...v].slice(0, 2).join('')
 }
 
 categoryRouter.get('/', async (req, res, next) => {
@@ -52,7 +57,7 @@ categoryRouter.post('/', async (req, res, next) => {
     }
     const category = await categoryService.create(req.userId!, {
       name,
-      icon: cleanIcon(req.body.icon) ?? '💰',
+      icon: cleanIcon(req.body.icon) ?? 'other',
       color: req.body.color ?? '#7C8CFF',
       type,
     })

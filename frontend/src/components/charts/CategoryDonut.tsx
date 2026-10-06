@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { formatCurrency, formatPercent } from '@/lib/utils'
 import { CHART } from './theme'
+import { CategoryIcon } from '@/components/ui/CategoryIcon'
 import type { CategoryTotal } from '@/types'
 
 /** Donut + legend list. Identity is never colour-only: every slice is named in the legend with its share. */
@@ -12,7 +13,7 @@ export function CategoryDonut({ data, currency, centerLabel = 'Spent' }: { data:
   const head = data.slice(0, 6)
   const tail = data.slice(6)
   const slices = tail.length
-    ? [...head, { id: 'other', name: `Other (${tail.length})`, icon: '•', color: '#8a958c', total: tail.reduce((s, d) => s + d.total, 0), share: tail.reduce((s, d) => s + d.share, 0), prevTotal: 0, count: 0 }]
+    ? [...head, { id: 'other', name: `Other (${tail.length})`, icon: 'other', color: '#8a958c', total: tail.reduce((s, d) => s + d.total, 0), share: tail.reduce((s, d) => s + d.share, 0), prevTotal: 0, count: 0 }]
     : head
   const shown = active !== null ? slices[active] : null
 
@@ -62,9 +63,8 @@ export function CategoryDonut({ data, currency, centerLabel = 'Spent' }: { data:
             className="flex items-center gap-3 rounded-full px-2 py-1.5 transition-colors hover:bg-surface-2"
           >
             <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
-            <span className="flex-1 truncate text-sm text-text-secondary">
-              {s.icon} {s.name}
-            </span>
+            <CategoryIcon icon={s.icon} color={s.color} size="xs" />
+            <span className="flex-1 truncate text-sm text-text-secondary">{s.name}</span>
             <span className="num text-sm font-semibold text-text-primary">{formatCurrency(s.total, currency)}</span>
             <span className="num w-10 text-right text-xs text-text-tertiary">{formatPercent(s.share)}</span>
           </li>

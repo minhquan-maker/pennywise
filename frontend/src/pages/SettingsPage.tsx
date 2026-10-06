@@ -27,9 +27,9 @@ import {
   useUpdateProfile,
 } from '@/hooks/useQueries'
 import { apiError, cn, getPasswordStrength } from '@/lib/utils'
+import { CATEGORY_ICONS, ICON_KEYS, resolveCategoryKey } from '@/lib/categoryIcons'
 import type { Category, TxType } from '@/types'
 
-const PRESET_ICONS = ['🍔', '🚌', '🛍️', '🎬', '📄', '💊', '💰', '🏠', '✈️', '📱', '🎮', '☕', '🛒', '🏋️', '📚', '🎁', '💼', '💻', '🐶', '👶', '🎓', '⛽', '🍺', '💡']
 // Categorical order validated for colour-vision deficiency on the dark surface
 const PRESET_COLORS = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#9085e9', '#3dd9a0', '#e66767', '#8a958c']
 
@@ -53,7 +53,7 @@ export function SettingsPage() {
   const [currency, setCurrency] = useState(user?.currency || 'USD')
   const [pw, setPw] = useState({ current: '', next: '' })
   const [catTab, setCatTab] = useState<TxType>('expense')
-  const [catForm, setCatForm] = useState<CatForm>({ open: false, editing: null, name: '', icon: PRESET_ICONS[0], color: PRESET_COLORS[0], type: 'expense' })
+  const [catForm, setCatForm] = useState<CatForm>({ open: false, editing: null, name: '', icon: 'utensils', color: PRESET_COLORS[0], type: 'expense' })
   const [confirm, setConfirm] = useState<'clear' | 'delete' | null>(null)
   const [catToDelete, setCatToDelete] = useState<Category | null>(null)
 
@@ -78,7 +78,7 @@ export function SettingsPage() {
       open: true,
       editing: cat,
       name: cat?.name ?? '',
-      icon: cat?.icon ?? PRESET_ICONS[0],
+      icon: cat?.icon ?? 'utensils',
       color: cat?.color ?? PRESET_COLORS[0],
       type: cat?.type ?? catTab,
     })
@@ -271,20 +271,27 @@ export function SettingsPage() {
           <Input label="Name" value={catForm.name} maxLength={30} placeholder="e.g. Coffee, Rent, Side hustle" onChange={(e) => setCatForm((f) => ({ ...f, name: e.target.value }))} />
           <div>
             <p className="mb-2 text-[13px] font-medium text-text-secondary">Icon</p>
-            <div className="grid grid-cols-8 gap-1.5">
-              {PRESET_ICONS.map((icon) => (
-                <button
-                  key={icon}
-                  type="button"
-                  onClick={() => setCatForm((f) => ({ ...f, icon }))}
-                  className={cn(
-                    'flex aspect-square items-center justify-center rounded-[var(--radius-sm)] border text-lg transition-all',
-                    catForm.icon === icon ? 'border-primary-500 bg-primary-500/12' : 'border-transparent bg-surface-2 hover:border-line-strong'
-                  )}
-                >
-                  {icon}
-                </button>
-              ))}
+            <div className="grid max-h-56 grid-cols-7 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-9">
+              {ICON_KEYS.map((key) => {
+                const { icon: Icon, label } = CATEGORY_ICONS[key]
+                const active = resolveCategoryKey(catForm.icon) === key
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    title={label}
+                    aria-label={label}
+                    aria-pressed={active}
+                    onClick={() => setCatForm((f) => ({ ...f, icon: key }))}
+                    className={cn(
+                      'flex aspect-square items-center justify-center rounded-[var(--radius-sm)] border transition-all',
+                      active ? 'border-primary-500 bg-primary-500/12 text-primary-400' : 'border-transparent bg-surface-2 text-text-secondary hover:border-line-strong hover:text-text-primary'
+                    )}
+                  >
+                    <Icon className="h-[18px] w-[18px]" strokeWidth={1.9} />
+                  </button>
+                )
+              })}
             </div>
           </div>
           <div>

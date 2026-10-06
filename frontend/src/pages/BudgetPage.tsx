@@ -300,7 +300,7 @@ export function BudgetPage() {
                         editor.categoryId === c.id ? 'border-primary-500 bg-primary-500/10 text-text-primary' : 'border-line bg-surface-2 text-text-secondary hover:border-line-strong'
                       )}
                     >
-                      <span>{c.icon}</span>
+                      <CategoryIcon icon={c.icon} color={c.color} size="xs" />
                       <span className="truncate">{c.name}</span>
                     </button>
                   )
@@ -377,8 +377,9 @@ export function BudgetPage() {
                       className="h-4 w-4 flex-shrink-0 accent-[#3dd9a0]"
                       aria-label={`Apply ${s.category}`}
                     />
+                    {cat && <CategoryIcon icon={cat.icon} color={cat.color} size="sm" />}
                     <span className="flex-1 truncate font-semibold text-text-primary">
-                      {cat?.icon} {s.category}
+                      {s.category}
                       {exists && <span className="ml-2 text-xs font-normal text-text-tertiary">(replaces current)</span>}
                     </span>
                     <div className="relative w-32">

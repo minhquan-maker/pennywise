@@ -18,6 +18,7 @@ import { Orb } from '@/components/ui/Orb'
 import { Button } from '@/components/ui/Button'
 import { useScrollReveal } from '@/hooks/useScrollReveal'
 import { useDemoLogin } from '@/hooks/useQueries'
+import { CategoryIcon } from '@/components/ui/CategoryIcon'
 import { cn } from '@/lib/utils'
 
 /* ─────────────────────────── content ─────────────────────────── */
@@ -172,13 +173,13 @@ function LifecycleMock({ kind }: { kind: (typeof LIFECYCLE)[number]['mock'] }) {
     return (
       <div className="space-y-2">
         {[
-          ['🍔', 'Lunch with team', '−$18.40'],
-          ['💼', 'October salary', '+$3,200'],
-          ['🚌', 'Metro top-up', '−$25.00'],
-          ['☕', 'Coffee', '−$4.20'],
-        ].map(([i, n, a]) => (
+          ['utensils', '#d95926', 'Lunch with team', '−$18.40'],
+          ['briefcase', '#3dd9a0', 'October salary', '+$3,200'],
+          ['bus', '#3987e5', 'Metro top-up', '−$25.00'],
+          ['coffee', '#c98500', 'Coffee', '−$4.20'],
+        ].map(([i, c, n, a]) => (
           <div key={n} className="flex items-center gap-3 rounded-xl bg-surface-2 px-3 py-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-3 text-sm">{i}</span>
+            <CategoryIcon icon={i} color={c} size="sm" />
             <span className="flex-1 text-xs text-text-primary">{n}</span>
             <span className={cn('text-xs font-bold', a.startsWith('+') ? 'text-primary-400' : 'text-text-primary')}>{a}</span>
           </div>
