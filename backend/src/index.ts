@@ -9,12 +9,15 @@ import { budgetRouter } from './routes/budget.routes.js'
 import { analyticsRouter } from './routes/analytics.routes.js'
 import { aiRouter } from './routes/ai.routes.js'
 import { exportRouter } from './routes/export.routes.js'
+import { isAiConfigured } from './services/ai.service.js'
 
 if (!process.env.JWT_SECRET) {
   throw new Error('JWT_SECRET must be set')
 }
 
 const app = express()
+app.set('trust proxy', 1)
+app.disable('x-powered-by')
 const PORT = process.env.PORT || 3000
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:4173')
@@ -27,11 +30,11 @@ app.use(cors({
   credentials: true,
 }))
 
-app.use(express.json())
+app.use(express.json({ limit: '100kb' }))
 
 // Health check
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() })
+  res.json({ status: 'ok', ai: isAiConfigured(), timestamp: new Date().toISOString() })
 })
 
 // Routes
@@ -42,6 +45,10 @@ app.use('/api/budgets', budgetRouter)
 app.use('/api/analytics', analyticsRouter)
 app.use('/api/ai', aiRouter)
 app.use('/api/export', exportRouter)
+
+app.use('/api', (_req, res) => {
+  res.status(404).json({ error: 'Not found' })
+})
 
 // Error handler
 app.use(errorHandler)

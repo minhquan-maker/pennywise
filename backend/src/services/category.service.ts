@@ -1,33 +1,45 @@
 import { prisma } from '../lib/prisma.js'
 
 const DEFAULT_CATEGORIES = [
-  { name: 'Food', icon: '🍔', color: '#ef4444', isDefault: true },
-  { name: 'Transport', icon: '🚌', color: '#3b82f6', isDefault: true },
-  { name: 'Shopping', icon: '🛍️', color: '#8b5cf6', isDefault: true },
-  { name: 'Entertainment', icon: '🎬', color: '#f59e0b', isDefault: true },
-  { name: 'Bills', icon: '📄', color: '#64748b', isDefault: true },
-  { name: 'Health', icon: '💊', color: '#10b981', isDefault: true },
-  { name: 'Other', icon: '💰', color: '#6366f1', isDefault: true },
+  { name: 'Food', icon: '🍔', color: '#F97362', type: 'expense' },
+  { name: 'Transport', icon: '🚌', color: '#5B9DFF', type: 'expense' },
+  { name: 'Shopping', icon: '🛍️', color: '#B48CFF', type: 'expense' },
+  { name: 'Entertainment', icon: '🎬', color: '#FFC24B', type: 'expense' },
+  { name: 'Bills', icon: '📄', color: '#8FA3B8', type: 'expense' },
+  { name: 'Health', icon: '💊', color: '#3DDBB4', type: 'expense' },
+  { name: 'Other', icon: '💰', color: '#7C8CFF', type: 'expense' },
+  { name: 'Salary', icon: '💼', color: '#5CF03A', type: 'income' },
+  { name: 'Freelance', icon: '💻', color: '#A6F56B', type: 'income' },
+  { name: 'Gifts & Other', icon: '🎁', color: '#D8FBC6', type: 'income' },
 ]
 
-export const categoryService = {
-  async seedDefaultCategories(userId: string) {
-    const existing = await prisma.category.findFirst({ where: { userId, isDefault: true } })
-    if (existing) return
+export const CATEGORY_TYPES = ['expense', 'income'] as const
 
-    await prisma.category.createMany({
-      data: DEFAULT_CATEGORIES.map((cat) => ({ ...cat, userId })),
+export const categoryService = {
+  /** Idempotently add any missing default categories (also back-fills income defaults for older accounts). */
+  async seedDefaultCategories(userId: string) {
+    const existing = await prisma.category.findMany({
+      where: { userId, isDefault: true },
+      select: { name: true, type: true },
     })
+    const have = new Set(existing.map((c) => `${c.type}:${c.name}`))
+    const missing = DEFAULT_CATEGORIES.filter((c) => !have.has(`${c.type}:${c.name}`))
+    if (missing.length) {
+      await prisma.category.createMany({
+        data: missing.map((cat) => ({ ...cat, userId, isDefault: true })),
+      })
+    }
   },
 
   async getAll(userId: string) {
+    await this.seedDefaultCategories(userId)
     return prisma.category.findMany({
       where: { userId },
-      orderBy: { name: 'asc' },
+      orderBy: [{ type: 'asc' }, { name: 'asc' }],
     })
   },
 
-  async create(userId: string, data: { name: string; icon: string; color: string }) {
+  async create(userId: string, data: { name: string; icon: string; color: string; type: string }) {
     return prisma.category.create({
       data: { ...data, userId, isDefault: false },
     })

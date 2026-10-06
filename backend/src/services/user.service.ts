@@ -16,7 +16,7 @@ export const userService = {
   async findById(id: string) {
     return prisma.user.findUnique({
       where: { id },
-      select: { id: true, email: true, name: true, currency: true, createdAt: true },
+      select: { id: true, email: true, name: true, currency: true, isDemo: true, createdAt: true },
     })
   },
 
@@ -24,7 +24,7 @@ export const userService = {
     return prisma.user.update({
       where: { id },
       data,
-      select: { id: true, email: true, name: true, currency: true },
+      select: { id: true, email: true, name: true, currency: true, isDemo: true },
     })
   },
 

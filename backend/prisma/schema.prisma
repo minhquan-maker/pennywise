@@ -13,6 +13,7 @@ model User {
   email        String   @unique
   passwordHash String
   name         String
+  isDemo       Boolean  @default(false)
   currency     String   @default("USD")
   createdAt    DateTime @default(now())
 
@@ -27,6 +28,7 @@ model Category {
   name      String
   icon      String  @default("$")
   color     String  @default("#6366f1")
+  type      String  @default("expense") // "expense" | "income"
   isDefault Boolean @default(false)
 
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -39,12 +41,15 @@ model Transaction {
   userId     String
   categoryId String
   amount     Float
+  type       String   @default("expense") // "expense" | "income"
   note       String?
   date       DateTime
   createdAt  DateTime @default(now())
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   category Category @relation(fields: [categoryId], references: [id])
+
+  @@index([userId, date])
 }
 
 model Budget {
