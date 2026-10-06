@@ -1,187 +1,217 @@
-import { useState } from 'react'
-import { Check, Calendar, FileText } from 'lucide-react'
-import { Modal } from '@/components/ui/Modal'
-import { Button } from '@/components/ui/Button'
-import { cn } from '@/lib/utils'
-import type { Category, Transaction } from '@/types'
+import { useMemo, useState } from 'react'
+import { Calendar, FileText } from 'lucide-react'
+import { Modal } from './Modal'
+import { Button } from './Button'
+import { SegmentedControl } from './SegmentedControl'
+import { CategoryIcon } from './CategoryIcon'
+import { cn, currencySymbol, formatCurrency, shiftDay, todayISO } from '@/lib/utils'
+import { useCategories, useCreateTransaction, useUpdateTransaction } from '@/hooks/useQueries'
+import { useAuthStore } from '@/stores/auth.store'
+import type { Transaction, TxType } from '@/types'
 
 interface TransactionModalProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (data: { categoryId: string; amount: number; note?: string; date: string }) => void
   initialData?: Transaction | null
-  categories: Category[]
-  isLoading?: boolean
-  currency: string
+  defaultType?: TxType
 }
 
-const QUICK_AMOUNTS = [5, 10, 25, 50, 100]
+const QUICK = {
+  USD: { expense: [5, 10, 20, 50, 100], income: [100, 500, 1000, 2500] },
+  VND: { expense: [20_000, 50_000, 100_000, 200_000, 500_000], income: [1_000_000, 5_000_000, 10_000_000, 20_000_000] },
+}
 
-export function TransactionModal({
-  isOpen,
-  onClose,
-  onSubmit,
-  initialData,
-  categories,
-  isLoading,
-  currency,
-}: TransactionModalProps) {
-  const defaults = initialData
-    ? {
-        amount: initialData.amount.toString(),
-        categoryId: initialData.categoryId,
-        note: initialData.note || '',
-        date: new Date(initialData.date).toISOString().split('T')[0],
-      }
-    : {
-        amount: '',
-        categoryId: categories[0]?.id || '',
-        note: '',
-        date: new Date().toISOString().split('T')[0],
-      }
+export function TransactionModal(props: TransactionModalProps) {
+  // Remount the form on every open so it starts from fresh state
+  if (!props.isOpen) return null
+  return <TransactionForm key={props.initialData?.id ?? 'new'} {...props} />
+}
 
-  const [amount, setAmount] = useState(defaults.amount)
-  const [categoryId, setCategoryId] = useState(defaults.categoryId)
-  const [note, setNote] = useState(defaults.note)
-  const [date, setDate] = useState(defaults.date)
+function TransactionForm({ isOpen, onClose, initialData, defaultType = 'expense' }: TransactionModalProps) {
+  const currency = useAuthStore((s) => s.user?.currency) || 'USD'
+  const { data: categories = [] } = useCategories()
+  const create = useCreateTransaction()
+  const update = useUpdateTransaction()
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!amount || !categoryId || !date) return
-    onSubmit({
-      categoryId,
-      amount: parseFloat(amount),
-      note: note || undefined,
-      date: new Date(date).toISOString(),
-    })
+  const [type, setType] = useState<TxType>(initialData?.type ?? defaultType)
+  const [amount, setAmount] = useState(initialData ? String(initialData.amount) : '')
+  const [categoryId, setCategoryId] = useState(initialData?.categoryId ?? '')
+  const [note, setNote] = useState(initialData?.note ?? '')
+  const [date, setDate] = useState(initialData ? initialData.date.slice(0, 10) : todayISO())
+
+  const typed = useMemo(() => categories.filter((c) => c.type === type), [categories, type])
+  const selectedId = typed.some((c) => c.id === categoryId) ? categoryId : typed[0]?.id ?? ''
+  const parsed = parseFloat(amount)
+  const valid = Number.isFinite(parsed) && parsed > 0 && !!selectedId && !!date
+  const busy = create.isPending || update.isPending
+  const today = todayISO()
+
+  const submit = (e?: React.FormEvent) => {
+    e?.preventDefault()
+    if (!valid || busy) return
+    const data = { categoryId: selectedId, amount: parsed, note: note.trim() || undefined, date }
+    const opts = { onSuccess: onClose }
+    if (initialData) update.mutate({ id: initialData.id, data }, opts)
+    else create.mutate(data, opts)
   }
 
-  const setToday = () => setDate(new Date().toISOString().split('T')[0])
-
-  const symbol = currency === 'VND' ? '' : '$'
-  const placeholder = currency === 'VND' ? '0' : '0.00'
+  const quick = (QUICK[currency as keyof typeof QUICK] ?? QUICK.USD)[type]
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={initialData ? 'Edit Transaction' : 'Add Transaction'}
+      title={initialData ? 'Edit transaction' : type === 'income' ? 'Add income' : 'Add expense'}
       size="lg"
       footer={
-        <div className="flex gap-3 justify-end">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button
-            variant="gradient"
-            onClick={handleSubmit}
-            isLoading={isLoading}
-            disabled={!amount || !categoryId || !date}
-            icon={<Check className="h-4 w-4" />}
-          >
-            {initialData ? 'Save Changes' : 'Add Transaction'}
+        <div className="flex gap-3">
+          <Button variant="secondary" onClick={onClose} className="flex-1 sm:flex-none">
+            Cancel
+          </Button>
+          <Button onClick={() => submit()} isLoading={busy} disabled={!valid} className="flex-1">
+            {initialData ? 'Save changes' : `Add ${type}`}
+            {valid && !busy && <span className="num opacity-70">· {formatCurrency(parsed, currency)}</span>}
           </Button>
         </div>
       }
     >
-      <form key={initialData?.id || 'new'} onSubmit={handleSubmit} className="space-y-5">
-        {/* Amount + Quick chips */}
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-text-secondary">Amount</label>
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary font-medium text-base">{symbol}</span>
+      <form onSubmit={submit} className="space-y-6">
+        <SegmentedControl
+          value={type}
+          onChange={setType}
+          className="w-full"
+          options={[
+            { value: 'expense', label: 'Expense' },
+            { value: 'income', label: 'Income' },
+          ]}
+        />
+
+        {/* Amount */}
+        <div>
+          <div
+            className={cn(
+              'flex items-center justify-center gap-1 rounded-[var(--radius-xl)] border border-line bg-surface-2 px-4 py-5 transition-colors focus-within:border-primary-500',
+              type === 'income' && 'focus-within:border-primary-400'
+            )}
+          >
+            <span className="flex-shrink-0 whitespace-nowrap text-2xl font-semibold text-text-tertiary">{type === 'income' ? '+' : '−'}{currencySymbol(currency)}</span>
             <input
+              data-autofocus
               type="number"
-              step="0.01"
+              inputMode="decimal"
+              step={currency === 'VND' ? '1000' : '0.01'}
               min="0"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder={placeholder}
-              className="w-full h-14 pl-10 pr-4 rounded-xl border border-[#262626] bg-[#171717] text-lg font-semibold text-white placeholder:text-text-tertiary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all tabular-nums"
+              placeholder="0"
+              aria-label="Amount"
+              className="num w-full min-w-0 max-w-[11ch] bg-transparent text-center text-4xl sm:text-5xl font-bold text-text-primary placeholder:text-text-tertiary/50 focus:outline-none"
             />
           </div>
-          <div className="flex gap-2 flex-wrap">
-            {QUICK_AMOUNTS.map((amt) => (
+          <div className="mt-3 flex flex-wrap justify-center gap-2">
+            {quick.map((q) => (
               <button
-                key={amt}
+                key={q}
                 type="button"
-                onClick={() => setAmount(amt.toString())}
+                onClick={() => setAmount(String(q))}
                 className={cn(
-                  'px-4 py-2 rounded-full text-sm font-medium transition-all duration-fast',
-                  amount === amt.toString()
-                    ? 'bg-primary-500 text-[#0A0A0A] shadow-sm'
-                    : 'bg-neutral-800 text-text-secondary hover:bg-neutral-700 hover:text-white'
+                  'num rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-all',
+                  parsed === q
+                    ? 'border-primary-500 bg-primary-500 text-forest'
+                    : 'border-line bg-surface-2 text-text-secondary hover:border-line-strong hover:text-text-primary'
                 )}
               >
-                {symbol}{amt}
+                {formatCurrency(q, currency, { compact: currency === 'VND' })}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Category grid — text only, no emoji */}
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-text-secondary">Category</label>
-          <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setCategoryId(cat.id)}
-                className={cn(
-                  'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 text-left',
-                  categoryId === cat.id
-                    ? 'bg-primary-50 border-2 border-primary-500 text-[#0A0A0A]'
-                    : 'bg-neutral-800 border-2 border-transparent hover:bg-neutral-700 text-white'
-                )}
-              >
-                <span
-                  className="w-3 h-3 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: cat.color }}
-                />
-                <span>{cat.name}</span>
-              </button>
-            ))}
-          </div>
+        {/* Category */}
+        <div>
+          <p className="mb-2.5 text-[13px] font-medium text-text-secondary">Category</p>
+          {typed.length === 0 ? (
+            <p className="text-sm text-text-tertiary">No {type} categories yet — add one in Settings.</p>
+          ) : (
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+              {typed.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setCategoryId(c.id)}
+                  aria-pressed={selectedId === c.id}
+                  className={cn(
+                    'flex flex-col items-center gap-1.5 rounded-[var(--radius-lg)] border px-2 py-3 text-xs font-medium transition-all',
+                    selectedId === c.id
+                      ? 'border-primary-500 bg-primary-500/10 text-text-primary'
+                      : 'border-line bg-surface-2 text-text-secondary hover:border-line-strong hover:text-text-primary'
+                  )}
+                >
+                  <CategoryIcon icon={c.icon} color={c.color} size="sm" />
+                  <span className="w-full truncate text-center">{c.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Date */}
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-text-secondary">Date</label>
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary">
-              <Calendar className="h-4 w-4" />
-            </span>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full h-14 pl-11 pr-4 rounded-xl border border-[#262626] bg-[#171717] text-base text-white focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:hover:opacity-100 cursor-pointer"
-            />
+        {/* Date + note */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <div className="mb-2.5 flex items-center justify-between">
+              <label htmlFor="txn-date" className="text-[13px] font-medium text-text-secondary">
+                Date
+              </label>
+              <div className="flex gap-1">
+                {[
+                  { label: 'Today', value: today },
+                  { label: 'Yesterday', value: shiftDay(today, -1) },
+                ].map((d) => (
+                  <button
+                    key={d.label}
+                    type="button"
+                    onClick={() => setDate(d.value)}
+                    className={cn(
+                      'rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors',
+                      date === d.value ? 'bg-primary-500/15 text-primary-400' : 'text-text-tertiary hover:text-text-primary'
+                    )}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="relative">
+              <Calendar className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
+              <input
+                id="txn-date"
+                type="date"
+                value={date}
+                max={today}
+                onChange={(e) => setDate(e.target.value)}
+                className="h-12 w-full rounded-[var(--radius-md)] border border-line bg-surface-2 pl-11 pr-3 text-[15px] text-text-primary focus:border-primary-500 focus:outline-none"
+              />
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={setToday}
-            className="text-xs text-primary-400 hover:text-primary-500 font-medium transition-colors"
-          >
-            Today
-          </button>
-        </div>
-
-        {/* Note */}
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-text-secondary">Note (optional)</label>
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary">
-              <FileText className="h-4 w-4" />
-            </span>
-            <input
-              type="text"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="What was this for?"
-              className="w-full h-14 pl-11 pr-4 rounded-xl border border-[#262626] bg-[#171717] text-base text-white placeholder:text-text-tertiary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
-            />
+          <div>
+            <label htmlFor="txn-note" className="mb-2.5 block text-[13px] font-medium text-text-secondary">
+              Note <span className="text-text-tertiary">(optional)</span>
+            </label>
+            <div className="relative">
+              <FileText className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
+              <input
+                id="txn-note"
+                type="text"
+                value={note}
+                maxLength={200}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder={type === 'income' ? 'e.g. October salary' : 'e.g. Lunch with team'}
+                className="h-12 w-full rounded-[var(--radius-md)] border border-line bg-surface-2 pl-11 pr-3 text-[15px] text-text-primary placeholder:text-text-tertiary focus:border-primary-500 focus:outline-none"
+              />
+            </div>
           </div>
         </div>
+        <button type="submit" className="hidden" aria-hidden tabIndex={-1} />
       </form>
     </Modal>
   )

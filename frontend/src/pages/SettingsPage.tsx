@@ -1,412 +1,285 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { User, Download, AlertTriangle, Trash2, Eraser, Tag, Plus } from 'lucide-react'
-import { Card } from '@/components/ui/Card'
+import { toast } from 'sonner'
+import { AlertTriangle, Database, Download, KeyRound, LogOut, Pencil, Plus, Tag, Trash2, User } from 'lucide-react'
+import { Card, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Modal } from '@/components/ui/Modal'
 import { Badge } from '@/components/ui/Badge'
-import { toast } from 'sonner'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { CategoryIcon } from '@/components/ui/CategoryIcon'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { useAuthStore } from '@/stores/auth.store'
-import { authService, clearService } from '@/lib/services'
-import { useCategories, useCreateCategory, useDeleteCategory } from '@/hooks/useQueries'
-import { cn } from '@/lib/utils'
+import { budgetService, transactionService } from '@/lib/services'
+import {
+  useCategories,
+  useChangePassword,
+  useCreateCategory,
+  useDeleteAccount,
+  useDeleteCategory,
+  useExportCSV,
+  useUpdateCategory,
+  useUpdateProfile,
+} from '@/hooks/useQueries'
+import { apiError, cn, getPasswordStrength } from '@/lib/utils'
+import type { Category, TxType } from '@/types'
 
-const PRESET_ICONS = ['🍔', '🚌', '🛍️', '🎬', '📄', '💊', '💰', '🏠', '✈️', '📱', '🎮', '☕', '🛒', '🏋️', '📚', '🎁']
-const PRESET_COLORS = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6', '#f97316', '#06b6d4']
+const PRESET_ICONS = ['🍔', '🚌', '🛍️', '🎬', '📄', '💊', '💰', '🏠', '✈️', '📱', '🎮', '☕', '🛒', '🏋️', '📚', '🎁', '💼', '💻', '🐶', '👶', '🎓', '⛽', '🍺', '💡']
+// Categorical order validated for colour-vision deficiency on the dark surface
+const PRESET_COLORS = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#9085e9', '#5cf03a', '#e66767', '#8a958c']
+
+type CatForm = { open: boolean; editing: Category | null; name: string; icon: string; color: string; type: TxType }
 
 export function SettingsPage() {
-  const { user, updateUser, logout } = useAuthStore()
+  const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   const qc = useQueryClient()
 
-  const { data: categories = [], isLoading: categoriesLoading } = useCategories()
+  const { data: categories = [], isLoading: catsLoading } = useCategories()
   const createCategory = useCreateCategory()
+  const updateCategory = useUpdateCategory()
   const deleteCategory = useDeleteCategory()
+  const updateProfile = useUpdateProfile()
+  const changePassword = useChangePassword()
+  const deleteAccount = useDeleteAccount()
+  const exportCsv = useExportCSV()
 
   const [name, setName] = useState(user?.name || '')
   const [currency, setCurrency] = useState(user?.currency || 'USD')
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const [confirmText, setConfirmText] = useState('')
-  const [clearOpen, setClearOpen] = useState(false)
-  const [clearConfirm, setClearConfirm] = useState('')
-  const [catModalOpen, setCatModalOpen] = useState(false)
-  const [newCatName, setNewCatName] = useState('')
-  const [newCatIcon, setNewCatIcon] = useState(PRESET_ICONS[0])
-  const [newCatColor, setNewCatColor] = useState(PRESET_COLORS[0])
+  const [pw, setPw] = useState({ current: '', next: '' })
+  const [catTab, setCatTab] = useState<TxType>('expense')
+  const [catForm, setCatForm] = useState<CatForm>({ open: false, editing: null, name: '', icon: PRESET_ICONS[0], color: PRESET_COLORS[0], type: 'expense' })
+  const [confirm, setConfirm] = useState<'clear' | 'delete' | null>(null)
+  const [catToDelete, setCatToDelete] = useState<Category | null>(null)
 
-  const updateMe = useMutation({
-    mutationFn: (data: { name?: string; currency?: string }) => authService.updateMe(data),
-    onSuccess: (data) => {
-      updateUser(data.data!.user)
-      qc.invalidateQueries({ queryKey: ['categories'] })
-      toast.success('Settings saved')
-    },
-    onError: () => toast.error('Failed to save settings'),
-  })
-
-  const deleteMe = useMutation({
-    mutationFn: () => authService.deleteMe(),
-    onSuccess: () => {
-      logout()
-      navigate('/register')
-    },
-    onError: () => toast.error('Failed to delete account'),
-  })
-
-  const clearAllData = useMutation({
+  const clearAll = useMutation({
     mutationFn: async () => {
-      await clearService.clearAllTransactions()
-      await clearService.clearAllBudgets()
+      await transactionService.clear()
+      await budgetService.clear()
     },
     onSuccess: () => {
       qc.invalidateQueries()
-      setClearOpen(false)
-      setClearConfirm('')
-      toast.success('All data cleared successfully')
+      setConfirm(null)
+      toast.success('All transactions and budgets cleared')
     },
-    onError: () => toast.error('Failed to clear data'),
+    onError: (err) => toast.error(apiError(err, 'Failed to clear data')),
   })
 
-  const handleSave = () => {
-    updateMe.mutate({ name, currency })
+  const strength = getPasswordStrength(pw.next)
+  const profileDirty = name.trim() !== user?.name || currency !== user?.currency
+
+  const openCat = (cat: Category | null) =>
+    setCatForm({
+      open: true,
+      editing: cat,
+      name: cat?.name ?? '',
+      icon: cat?.icon ?? PRESET_ICONS[0],
+      color: cat?.color ?? PRESET_COLORS[0],
+      type: cat?.type ?? catTab,
+    })
+  const closeCat = () => setCatForm((f) => ({ ...f, open: false }))
+
+  const saveCat = () => {
+    const data = { name: catForm.name.trim(), icon: catForm.icon, color: catForm.color }
+    if (!data.name) return
+    if (catForm.editing) updateCategory.mutate({ id: catForm.editing.id, data }, { onSuccess: closeCat })
+    else createCategory.mutate({ ...data, type: catForm.type }, { onSuccess: closeCat })
   }
 
-  const handleExportCSV = async () => {
-    try {
-      const blob = await clearService.exportCSV()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `pennywise-export-${new Date().toISOString().split('T')[0]}.csv`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      a.remove()
-      toast.success('CSV downloaded')
-    } catch {
-      toast.error('Failed to export CSV')
-    }
-  }
-
-  const handleDeleteAccount = () => {
-    if (confirmText !== user?.email) return
-    deleteMe.mutate()
-  }
-
-  const handleCreateCategory = () => {
-    if (!newCatName.trim()) {
-      toast.error('Category name is required')
-      return
-    }
-    createCategory.mutate(
-      { name: newCatName.trim(), icon: newCatIcon, color: newCatColor },
-      {
-        onSuccess: () => {
-          setCatModalOpen(false)
-          setNewCatName('')
-          setNewCatIcon(PRESET_ICONS[0])
-          setNewCatColor(PRESET_COLORS[0])
-        },
-      }
-    )
-  }
+  const shownCats = categories.filter((c) => c.type === catTab)
 
   return (
-    <div className="max-w-xl mx-auto space-y-6 animate-stagger">
-      {/* Page header */}
-      <div>
-        <h1 className="text-3xl font-extrabold text-white">Settings</h1>
-        <p className="text-base text-text-secondary mt-1">Manage your account and preferences</p>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-6">
+      <PageHeader eyebrow="Account" title="Settings" />
 
-      {/* Profile section */}
-      <Card variant="dark" padding="lg">
-        <Card.Header>
-          <div className="flex items-center gap-2">
-            <User className="h-4 w-4 text-primary-400" />
-            <h2 className="text-lg font-bold text-white">Profile</h2>
-          </div>
-        </Card.Header>
-        <div className="space-y-4">
-          <Input
-            label="Display Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            variant="filled"
-            placeholder="Your name"
-          />
-          <p className="text-sm text-text-secondary">{user?.email || ''}</p>
-          <Select
-            label="Currency"
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
-            variant="filled"
-          >
-            <option value="USD">USD ($)</option>
-            <option value="VND">VND (₫)</option>
+      {/* Profile */}
+      <Card>
+        <CardHeader title="Profile" subtitle={user?.isDemo ? 'Demo account' : user?.email} icon={<User className="h-4 w-4" />} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Input label="Display name" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} />
+          <Select label="Currency" value={currency} onChange={(e) => setCurrency(e.target.value)}>
+            <option value="USD">USD — US Dollar ($)</option>
+            <option value="VND">VND — Vietnamese Đồng (₫)</option>
           </Select>
-          <Button onClick={handleSave} isLoading={updateMe.isPending} variant="gradient">
-            Save Changes
+        </div>
+        <p className="mt-3 text-xs text-text-tertiary">Changing currency relabels amounts; it doesn't convert existing values.</p>
+        <div className="mt-5 flex justify-end">
+          <Button disabled={!profileDirty || !name.trim()} isLoading={updateProfile.isPending} onClick={() => updateProfile.mutate({ name: name.trim(), currency })}>
+            Save profile
           </Button>
         </div>
       </Card>
 
-      {/* Categories section */}
-      <Card variant="dark" padding="lg">
-        <Card.Header>
-          <div className="flex items-center justify-between w-full gap-3">
-            <div className="flex items-center gap-2">
-              <Tag className="h-4 w-4 text-primary-400" />
-              <h2 className="text-lg font-bold text-white">Categories</h2>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              icon={<Plus className="h-3.5 w-3.5" />}
-              onClick={() => setCatModalOpen(true)}
-            >
-              Add
-            </Button>
-          </div>
-        </Card.Header>
-        <p className="text-sm text-text-secondary mb-4">
-          Organize your transactions with custom categories.
-        </p>
-        {categoriesLoading ? (
-          <div className="text-sm text-text-tertiary">Loading categories...</div>
-        ) : categories.length === 0 ? (
-          <div className="text-center py-8 text-text-tertiary text-sm">
-            No categories yet. Add one to get started.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {categories.map((cat) => (
-              <div
-                key={cat.id}
-                className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border border-[#262626] bg-neutral-800"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <span
-                    className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: `${cat.color}26` }}
-                  >
-                    <span className="text-sm">{cat.icon}</span>
-                  </span>
-                  <span className="text-sm text-white truncate">{cat.name}</span>
-                  {cat.isDefault && (
-                    <Badge label="Default" color="#737373" variant="soft" size="sm" />
-                  )}
+      {/* Security */}
+      {!user?.isDemo && (
+        <Card>
+          <CardHeader title="Password" subtitle="Use at least 8 characters" icon={<KeyRound className="h-4 w-4" />} />
+          <form
+            className="grid gap-4 sm:grid-cols-2"
+            onSubmit={(e) => {
+              e.preventDefault()
+              changePassword.mutate({ current: pw.current, next: pw.next }, { onSuccess: () => setPw({ current: '', next: '' }) })
+            }}
+          >
+            <Input label="Current password" type="password" autoComplete="current-password" value={pw.current} onChange={(e) => setPw((p) => ({ ...p, current: e.target.value }))} />
+            <div>
+              <Input label="New password" type="password" autoComplete="new-password" value={pw.next} onChange={(e) => setPw((p) => ({ ...p, next: e.target.value }))} />
+              {pw.next && (
+                <div className="mt-2 flex gap-1">
+                  {[0, 1, 2, 3].map((i) => (
+                    <span key={i} className={cn('h-1 flex-1 rounded-full', i < strength ? (strength >= 3 ? 'bg-primary-500' : 'bg-warning-500') : 'bg-surface-3')} />
+                  ))}
                 </div>
-                {!cat.isDefault && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    iconOnly
-                    icon={<Trash2 className="h-3.5 w-3.5" />}
-                    onClick={() => {
-                      if (confirm(`Delete category "${cat.name}"?`)) {
-                        deleteCategory.mutate(cat.id)
-                      }
-                    }}
-                    className="!w-8 !h-8 !p-0 !text-text-tertiary hover:!text-danger-500 hover:!bg-neutral-700"
-                  />
+              )}
+            </div>
+            <div className="flex justify-end sm:col-span-2">
+              <Button type="submit" variant="secondary" disabled={!pw.current || pw.next.length < 8} isLoading={changePassword.isPending}>
+                Update password
+              </Button>
+            </div>
+          </form>
+        </Card>
+      )}
+
+      {/* Categories */}
+      <Card>
+        <CardHeader
+          title="Categories"
+          subtitle="Organise spending and income"
+          icon={<Tag className="h-4 w-4" />}
+          action={
+            <Button size="sm" variant="outline" icon={<Plus className="h-3.5 w-3.5" />} onClick={() => openCat(null)}>
+              New
+            </Button>
+          }
+        />
+        <SegmentedControl
+          value={catTab}
+          onChange={setCatTab}
+          size="sm"
+          className="mb-4"
+          options={[
+            { value: 'expense', label: 'Spending' },
+            { value: 'income', label: 'Income' },
+          ]}
+        />
+        {catsLoading ? (
+          <Skeleton className="h-32 w-full" />
+        ) : (
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {shownCats.map((c) => (
+              <li key={c.id} className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-line bg-surface-2/60 px-3 py-2.5">
+                <CategoryIcon icon={c.icon} color={c.color} size="sm" />
+                <span className="flex-1 truncate text-sm text-text-primary">{c.name}</span>
+                {c.isDefault && <Badge label="Default" color="#8a958c" size="sm" />}
+                <button
+                  onClick={() => openCat(c)}
+                  aria-label={`Edit ${c.name}`}
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-text-tertiary transition-colors hover:bg-surface-3 hover:text-text-primary"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+                {!c.isDefault && (
+                  <button
+                    onClick={() => setCatToDelete(c)}
+                    aria-label={`Delete ${c.name}`}
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-text-tertiary transition-colors hover:bg-danger-500/12 hover:text-danger-400"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
                 )}
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </Card>
 
-      {/* Data Export section */}
-      <Card variant="dark" padding="md">
-        <Card.Header>
-          <div className="flex items-center gap-2">
-            <Download className="h-4 w-4 text-primary-400" />
-            <h2 className="text-base font-bold text-white">Export Data</h2>
-          </div>
-        </Card.Header>
-        <p className="text-sm text-text-secondary mb-3">Download your transaction history</p>
-        <Button variant="outline" onClick={handleExportCSV} icon={<Download className="h-4 w-4" />}>
-          Export as CSV
-        </Button>
-      </Card>
-
-      {/* Clear All Data section */}
-      <Card variant="dark" padding="lg">
-        <Card.Header>
-          <div className="flex items-center gap-2">
-            <Eraser className="h-4 w-4 text-warning-500" />
-            <h2 className="text-base font-bold text-white">Clear All Data</h2>
-          </div>
-        </Card.Header>
-        <p className="text-sm text-text-secondary mb-4">
-          Remove all transactions and budgets. Your account stays active — you can start fresh.
-        </p>
-        <Button variant="outline" onClick={() => setClearOpen(true)} icon={<Eraser className="h-4 w-4" />}>
-          Clear All Data
-        </Button>
-      </Card>
-
-      {/* Danger Zone section */}
-      <Card
-        variant="dark"
-        padding="lg"
-        className="border-danger-700"
-      >
-        <Card.Header>
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-danger-500" />
-            <h2 className="text-base font-bold text-white">Danger Zone</h2>
-            <Badge variant="solid" color="#dc2626" label="Danger Zone" size="sm" />
-          </div>
-        </Card.Header>
-        <p className="text-sm text-text-secondary mb-4">
-          Permanently delete your account and all data. This action cannot be undone.
-        </p>
-        <Button variant="danger" onClick={() => setDeleteOpen(true)} icon={<Trash2 className="h-4 w-4" />}>
-          Delete Account
-        </Button>
-      </Card>
-
-      {/* Delete Confirmation Modal */}
-      <Modal
-        isOpen={deleteOpen}
-        onClose={() => { setDeleteOpen(false); setConfirmText('') }}
-        title={
-          <span className="flex items-center gap-2 text-danger-600">
-            <AlertTriangle className="h-4 w-4" />
-            Delete Account
-          </span>
-        }
-        size="sm"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-text-secondary">
-            This will permanently delete your account and all transactions, budgets, and categories.
-            <strong> This action cannot be undone.</strong>
-          </p>
-          <p className="text-sm text-text-secondary">
-            Type <strong>{user?.email}</strong> to confirm:
-          </p>
-          <Input
-            value={confirmText}
-            onChange={(e) => setConfirmText(e.target.value)}
-            placeholder={user?.email}
-            variant="filled"
-          />
-          <Button
-            variant="danger"
-            onClick={handleDeleteAccount}
-            isLoading={deleteMe.isPending}
-            className="w-full"
-            icon={<Trash2 className="h-4 w-4" />}
-            disabled={confirmText !== user?.email}
-          >
-            Delete My Account
+      {/* Data */}
+      <Card>
+        <CardHeader title="Your data" subtitle="Export or reset — your account stays" icon={<Database className="h-4 w-4" />} />
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" icon={<Download className="h-4 w-4" />} isLoading={exportCsv.isPending} onClick={() => exportCsv.mutate(undefined)}>
+            Export all as CSV
+          </Button>
+          <Button variant="ghost" className="hover:!bg-danger-500/12 hover:!text-danger-400" icon={<Trash2 className="h-4 w-4" />} onClick={() => setConfirm('clear')}>
+            Clear all data
           </Button>
         </div>
-      </Modal>
+      </Card>
 
-      {/* Clear All Data Modal */}
-      <Modal
-        isOpen={clearOpen}
-        onClose={() => { setClearOpen(false); setClearConfirm('') }}
-        title={
-          <span className="flex items-center gap-2 text-warning-600">
-            <Eraser className="h-4 w-4" />
-            Clear All Data
-          </span>
-        }
-        size="sm"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-text-secondary">
-            This will permanently delete all your transactions and budgets.
-            <strong> Your account will not be affected.</strong>
-            <br />
-            This action cannot be undone.
-          </p>
-          <p className="text-sm text-text-secondary">
-            Type <strong>clear</strong> to confirm:
-          </p>
-          <Input
-            value={clearConfirm}
-            onChange={(e) => setClearConfirm(e.target.value)}
-            placeholder="clear"
-            variant="filled"
-          />
+      {/* Danger zone */}
+      <Card className="border-danger-500/30">
+        <CardHeader title="Danger zone" subtitle="Permanently delete your account and everything in it" icon={<AlertTriangle className="h-4 w-4 text-danger-400" />} />
+        <div className="flex flex-wrap gap-2">
+          <Button variant="danger" icon={<Trash2 className="h-4 w-4" />} onClick={() => setConfirm('delete')}>
+            Delete account
+          </Button>
           <Button
-            variant="danger"
-            onClick={() => clearAllData.mutate()}
-            isLoading={clearAllData.isPending}
-            className="w-full"
-            disabled={clearConfirm !== 'clear'}
+            variant="ghost"
+            icon={<LogOut className="h-4 w-4" />}
+            onClick={() => {
+              qc.clear()
+              logout()
+              navigate('/login')
+            }}
           >
-            Clear All Data
+            Log out
           </Button>
         </div>
-      </Modal>
+      </Card>
 
-      {/* New Category Modal */}
+      {/* Category editor */}
       <Modal
-        isOpen={catModalOpen}
-        onClose={() => {
-          setCatModalOpen(false)
-          setNewCatName('')
-          setNewCatIcon(PRESET_ICONS[0])
-          setNewCatColor(PRESET_COLORS[0])
-        }}
-        title="Add Category"
-        size="md"
+        isOpen={catForm.open}
+        onClose={closeCat}
+        title={catForm.editing ? 'Edit category' : 'New category'}
         footer={
           <div className="flex gap-3">
-            <Button
-              variant="secondary"
-              onClick={() => setCatModalOpen(false)}
-              className="flex-1"
-            >
+            <Button variant="secondary" className="flex-1" onClick={closeCat}>
               Cancel
             </Button>
-            <Button
-              variant="gradient"
-              onClick={handleCreateCategory}
-              isLoading={createCategory.isPending}
-              disabled={!newCatName.trim()}
-              className="flex-1"
-            >
-              Create
+            <Button className="flex-1" disabled={!catForm.name.trim()} isLoading={createCategory.isPending || updateCategory.isPending} onClick={saveCat}>
+              {catForm.editing ? 'Save' : 'Create'}
             </Button>
           </div>
         }
       >
         <div className="space-y-5">
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-text-secondary">Category Name</label>
-            <Input
-              value={newCatName}
-              onChange={(e) => setNewCatName(e.target.value)}
-              placeholder="e.g. Coffee, Gym, Travel"
-              variant="filled"
-              maxLength={30}
-            />
+          <div className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-line bg-surface-2 p-3">
+            <CategoryIcon icon={catForm.icon} color={catForm.color} size="lg" />
+            <div>
+              <p className="font-semibold text-text-primary">{catForm.name || 'Category name'}</p>
+              <p className="text-xs capitalize text-text-tertiary">{catForm.type}</p>
+            </div>
           </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-text-secondary">Icon</label>
+          {!catForm.editing && (
+            <SegmentedControl
+              value={catForm.type}
+              onChange={(type) => setCatForm((f) => ({ ...f, type }))}
+              className="w-full"
+              options={[
+                { value: 'expense', label: 'Spending' },
+                { value: 'income', label: 'Income' },
+              ]}
+            />
+          )}
+          <Input label="Name" value={catForm.name} maxLength={30} placeholder="e.g. Coffee, Rent, Side hustle" onChange={(e) => setCatForm((f) => ({ ...f, name: e.target.value }))} />
+          <div>
+            <p className="mb-2 text-[13px] font-medium text-text-secondary">Icon</p>
             <div className="grid grid-cols-8 gap-1.5">
               {PRESET_ICONS.map((icon) => (
                 <button
                   key={icon}
                   type="button"
-                  onClick={() => setNewCatIcon(icon)}
+                  onClick={() => setCatForm((f) => ({ ...f, icon }))}
                   className={cn(
-                    'w-full aspect-square rounded-lg flex items-center justify-center text-lg transition-all',
-                    newCatIcon === icon
-                      ? 'bg-primary-500/20 border-2 border-primary-500'
-                      : 'bg-neutral-800 border-2 border-transparent hover:border-neutral-600'
+                    'flex aspect-square items-center justify-center rounded-[var(--radius-sm)] border text-lg transition-all',
+                    catForm.icon === icon ? 'border-primary-500 bg-primary-500/12' : 'border-transparent bg-surface-2 hover:border-line-strong'
                   )}
                 >
                   {icon}
@@ -414,44 +287,53 @@ export function SettingsPage() {
               ))}
             </div>
           </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-text-secondary">Color</label>
-            <div className="grid grid-cols-5 gap-1.5">
+          <div>
+            <p className="mb-2 text-[13px] font-medium text-text-secondary">Colour</p>
+            <div className="flex flex-wrap gap-2">
               {PRESET_COLORS.map((color) => (
                 <button
                   key={color}
                   type="button"
-                  onClick={() => setNewCatColor(color)}
-                  className={cn(
-                    'w-full aspect-square rounded-lg transition-all',
-                    newCatColor === color
-                      ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-900'
-                      : 'hover:scale-110'
-                  )}
+                  aria-label={`Colour ${color}`}
+                  onClick={() => setCatForm((f) => ({ ...f, color }))}
+                  className={cn('h-9 w-9 rounded-full transition-transform hover:scale-110', catForm.color === color && 'ring-2 ring-text-primary ring-offset-2 ring-offset-surface')}
                   style={{ backgroundColor: color }}
                 />
               ))}
             </div>
           </div>
-
-          {/* Preview */}
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-neutral-800 border border-[#262626]">
-            <span
-              className="w-9 h-9 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: `${newCatColor}26` }}
-            >
-              <span className="text-lg">{newCatIcon}</span>
-            </span>
-            <div>
-              <span className="text-sm font-semibold text-white">
-                {newCatName || 'Category Name'}
-              </span>
-              <p className="text-xs text-text-tertiary">Preview</p>
-            </div>
-          </div>
         </div>
       </Modal>
+
+      <ConfirmDialog
+        isOpen={!!catToDelete}
+        onClose={() => setCatToDelete(null)}
+        onConfirm={() => catToDelete && deleteCategory.mutate(catToDelete.id, { onSettled: () => setCatToDelete(null) })}
+        isLoading={deleteCategory.isPending}
+        title={`Delete "${catToDelete?.name}"?`}
+        description="Its budgets are removed too. Categories that still have transactions can't be deleted."
+        confirmLabel="Delete"
+      />
+      <ConfirmDialog
+        isOpen={confirm === 'clear'}
+        onClose={() => setConfirm(null)}
+        onConfirm={() => clearAll.mutate()}
+        isLoading={clearAll.isPending}
+        title="Clear all data?"
+        description="Every transaction and budget is deleted. Categories and your account are kept."
+        requireText="clear"
+        confirmLabel="Clear everything"
+      />
+      <ConfirmDialog
+        isOpen={confirm === 'delete'}
+        onClose={() => setConfirm(null)}
+        onConfirm={() => deleteAccount.mutate(undefined, { onSuccess: () => navigate('/') })}
+        isLoading={deleteAccount.isPending}
+        title="Delete your account?"
+        description="This permanently removes your account, transactions, budgets and categories."
+        requireText={user?.isDemo ? 'delete' : user?.email}
+        confirmLabel="Delete forever"
+      />
     </div>
   )
 }

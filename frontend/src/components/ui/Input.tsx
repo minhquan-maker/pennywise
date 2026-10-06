@@ -1,4 +1,4 @@
-import { forwardRef, InputHTMLAttributes, ReactNode } from 'react'
+import { forwardRef, useId, type InputHTMLAttributes, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -6,63 +6,47 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string
   hint?: string
   leftIcon?: ReactNode
-  rightIcon?: ReactNode
-  variant?: 'default' | 'filled'
+  rightSlot?: ReactNode
 }
 
+export const fieldClass =
+  'block w-full h-12 rounded-[var(--radius-md)] border border-line bg-surface-2 px-4 text-[15px] text-text-primary ' +
+  'placeholder:text-text-tertiary transition-colors duration-150 ' +
+  'hover:border-line-strong focus:border-primary-500 focus:outline-none focus:ring-4 focus:ring-primary-500/10 ' +
+  'disabled:cursor-not-allowed disabled:opacity-50'
+
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, hint, id, leftIcon, rightIcon, variant = 'default', ...props }, ref) => {
-    const inputId = id || label?.toLowerCase().replace(/\s/g, '-')
+  ({ className, label, error, hint, id, leftIcon, rightSlot, ...props }, ref) => {
+    const autoId = useId()
+    const inputId = id || autoId
     return (
       <div className="space-y-1.5">
         {label && (
-          <label htmlFor={inputId} className="block text-sm font-medium text-text-secondary">
+          <label htmlFor={inputId} className="block text-[13px] font-medium text-text-secondary">
             {label}
           </label>
         )}
         <div className="relative">
           {leftIcon && (
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none">
-              {leftIcon}
-            </span>
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary">{leftIcon}</span>
           )}
           <input
             ref={ref}
             id={inputId}
             className={cn(
-              'block w-full rounded-lg border text-sm text-white',
-              'placeholder:text-text-tertiary',
-              'transition-all duration-fast',
-              // Default variant
-              variant === 'default' && [
-                'border-[#262626] bg-[#171717]',
-                'focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20',
-                'disabled:cursor-not-allowed disabled:bg-[#0A0A0A] disabled:text-text-tertiary',
-              ],
-              // Filled variant
-              variant === 'filled' && [
-                'bg-[#262626] border-transparent',
-                'focus:bg-[#262626] focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20',
-                'disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-text-tertiary',
-              ],
-              // Error
-              error && 'border-danger-500 focus:border-danger-500 focus:ring-danger-500/20',
-              // Icon padding
-              leftIcon && 'ps-10',
-              rightIcon && 'pe-10',
+              fieldClass,
+              error && 'border-danger-500 focus:border-danger-500 focus:ring-danger-500/10',
+              leftIcon && 'pl-11',
+              rightSlot && 'pr-12',
               className
             )}
             aria-invalid={error ? 'true' : undefined}
             {...props}
           />
-          {rightIcon && (
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none">
-              {rightIcon}
-            </span>
-          )}
+          {rightSlot && <span className="absolute right-2 top-1/2 -translate-y-1/2">{rightSlot}</span>}
         </div>
-        {error && <p className="text-sm text-danger-500">{error}</p>}
-        {hint && !error && <p className="text-sm text-text-tertiary">{hint}</p>}
+        {error && <p className="text-xs text-danger-400">{error}</p>}
+        {hint && !error && <p className="text-xs text-text-tertiary">{hint}</p>}
       </div>
     )
   }
