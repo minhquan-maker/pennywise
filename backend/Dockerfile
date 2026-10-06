@@ -1,4 +1,4 @@
-# PennyWise API — production image (SQLite on a mounted volume)
+# PennyWise API — production image (PostgreSQL via DATABASE_URL)
 FROM node:20-slim
 RUN apt-get update -y && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
@@ -13,7 +13,6 @@ RUN npm run build && npm prune --omit=dev
 
 ENV NODE_ENV=production
 ENV PORT=3000
-# Mount a persistent volume at /data so the database survives deploys
-ENV DATABASE_URL="file:/data/pennywise.db"
+# Provide DATABASE_URL (and DATABASE_URL_UNPOOLED) for a PostgreSQL database at runtime
 EXPOSE 3000
 CMD ["npm", "run", "start:prod"]

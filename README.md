@@ -35,7 +35,7 @@ All calendar math is done in UTC: a transaction's date is stored as UTC midnight
 ## Stack
 
 - Frontend: React 19, TypeScript, Vite, Tailwind CSS v4, TanStack Query, Recharts, Zustand, Sonner, Lucide
-- Backend: Express, TypeScript, Prisma, SQLite, JWT, bcryptjs
+- Backend: Express, TypeScript, Prisma, PostgreSQL (Neon), JWT, bcryptjs
 - AI (optional): Groq API, `llama-3.3-70b-versatile`
 
 ## Project Structure
@@ -50,7 +50,7 @@ pennywise/
 │   ├── stores/       # auth + UI (transaction sheet) stores
 │   └── types/
 ├── backend/
-│   ├── prisma/       # schema
+│   ├── prisma/       # schema + migrations
 │   └── src/
 │       ├── lib/          # prisma client, UTC date helpers
 │       ├── routes/       # REST API
@@ -61,14 +61,17 @@ pennywise/
 
 ## Local Setup
 
-Requires Node.js 20+.
+Requires Node.js 20+ and Docker (for a local PostgreSQL).
 
 ```bash
+# 0. Database (PostgreSQL on localhost:5432)
+docker compose up -d db
+
 # 1. API (http://localhost:3000)
 cd backend
 cp .env.example .env        # set JWT_SECRET; GROQ_API_KEY is optional
 npm install
-npx prisma db push
+npx prisma migrate dev      # creates the tables
 npm run dev
 
 # 2. Web app (http://localhost:5173) — in a second terminal
@@ -77,7 +80,9 @@ npm install
 npm run dev
 ```
 
-The Vite dev server proxies `/api` to `localhost:3000`, so `VITE_API_URL` is only needed when the API lives elsewhere. Open the app and press **Try the live demo**, or register an account (default expense and income categories are created automatically).
+The Vite dev server proxies `/api` to `localhost:3000`, so `VITE_API_URL` is only needed when the API lives on another domain. Open the app and press **Try the live demo**, or register an account (default expense and income categories are created automatically).
+
+Schema changes: edit `backend/prisma/schema.prisma`, then `npx prisma migrate dev --name <change>` and commit the new folder in `prisma/migrations/`.
 
 ## Environment Variables
 
@@ -85,38 +90,39 @@ The Vite dev server proxies `/api` to `localhost:3000`, so `VITE_API_URL` is onl
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
-| `DATABASE_URL` | SQLite database path | `file:./dev.db` |
+| `DATABASE_URL` | PostgreSQL connection (pooled on Neon) | local docker-compose DB |
+| `DATABASE_URL_UNPOOLED` | Direct PostgreSQL connection, used for migrations | local docker-compose DB |
 | `JWT_SECRET` | JWT signing secret (required) | — |
 | `GROQ_API_KEY` | Optional: LLM wording for summaries, insights and explanations | empty → engine only |
-| `PORT` | API port | `3000` |
-| `ALLOWED_ORIGINS` | Comma-separated frontend origins for CORS; `*` wildcard allowed (e.g. `https://pennywise-*.vercel.app`) | localhost Vite origins |
+| `PORT` | API port (ignored on Vercel) | `3000` |
+| `ALLOWED_ORIGINS` | CORS origins, `*` wildcard allowed — only needed when the web app is on a different domain | localhost Vite origins |
 | `CONTACT_WEBHOOK_URL` | Optional Slack/Discord incoming webhook for contact-form messages | empty |
 
 ### Frontend
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
-| `VITE_API_URL` | Backend API base URL | `/api` |
+| `VITE_API_URL` | Backend API base URL — leave unset on Vercel (same domain) | `/api` |
 | `VITE_CONTACT_EMAIL` | Optional email shown in the Contact section | empty |
 
 Never commit `.env` files or API keys.
 
-## Deploy
+## Deploy (Vercel, one project)
 
-**API (Railway, Render, Fly — any host with a persistent disk):** `backend/Dockerfile` builds the API and runs `npm run start:prod`, which applies the Prisma schema (`prisma db push`) and starts the server. Mount a volume at `/data` (the image sets `DATABASE_URL=file:/data/pennywise.db`) and set `JWT_SECRET`, `ALLOWED_ORIGINS` (your frontend URL) and optionally `GROQ_API_KEY`. `backend/railway.json` configures the health check at `/api/health`.
+The root `vercel.json` deploys both apps as **Vercel Services** on one domain: `/api/*` goes to the Express backend (a serverless function), everything else to the Vite frontend. No CORS or `VITE_API_URL` is needed.
 
-Without Docker: `npm ci && npm run build && npm run start:prod`.
+1. **Merge to `main`** (Vercel builds the branch you import).
+2. **New Project → import `minhquan-maker/pennywise`.** Keep Root Directory `./`; Vercel reads `vercel.json` and shows the *Services* preset with `backend` and `frontend`.
+3. **Add a database:** Project → *Storage* → *Create Database* → **Neon (Postgres)** → connect it to the project. This sets `DATABASE_URL` and `DATABASE_URL_UNPOOLED` automatically.
+4. **Environment variables:** `JWT_SECRET` = a long random string (e.g. `openssl rand -hex 32`). Optional: `GROQ_API_KEY`, `CONTACT_WEBHOOK_URL`, `VITE_CONTACT_EMAIL`.
+5. **Deploy.** The backend build runs `prisma migrate deploy`, so tables are created on the first deploy.
+6. **Smoke test:** open `https://<project>.vercel.app/api/health` (should return `{"status":"ok"}`), then the site → **Try the live demo** → add a transaction → send a Contact message.
 
-**Web (Vercel):** import the repo with root directory `frontend/` (framework: Vite). Set `VITE_API_URL=https://<your-api-host>/api`. `frontend/vercel.json` rewrites all routes to the SPA.
+If the database is connected after the first deploy, redeploy once so the migration runs.
 
-### Deploy checklist
+Contact messages are stored in the `ContactMessage` table (browse with `npx prisma studio` or Neon's console) and forwarded to `CONTACT_WEBHOOK_URL` when set.
 
-1. Deploy the API first; note its URL and confirm `GET /api/health` returns `{"status":"ok"}`.
-2. API env: `JWT_SECRET` (long random string), `ALLOWED_ORIGINS=https://<your-app>.vercel.app,https://<project>-*.vercel.app`, volume mounted at `/data`; optional `GROQ_API_KEY`, `CONTACT_WEBHOOK_URL`.
-3. Vercel env: `VITE_API_URL=https://<api-host>/api` (and optional `VITE_CONTACT_EMAIL`), then deploy.
-4. Smoke test: open the site → **Try the live demo** → add a transaction → send a Contact message.
-
-Contact messages are stored in the `ContactMessage` table (browse with `npx prisma studio`) and forwarded to `CONTACT_WEBHOOK_URL` when set.
+**Alternative (any Docker host):** `backend/Dockerfile` builds the API and `npm run start:prod` runs `prisma migrate deploy` then starts it; point `DATABASE_URL`/`DATABASE_URL_UNPOOLED` at any PostgreSQL. Host the frontend separately with `VITE_API_URL` and `ALLOWED_ORIGINS` set.
 
 ## API Reference
 

@@ -9,15 +9,18 @@ AI-powered personal finance tracker: expenses and income, budgets with pace/proj
 ## Development Commands
 
 ```bash
+# Database (PostgreSQL on :5432)
+docker compose up -d db
+
 # Backend (runs on :3000)
-cd backend && npm install && npx prisma generate && npm run dev
+cd backend && npm install && npx prisma migrate dev && npm run dev
 
 # Frontend (runs on :5173)
 cd frontend && npm install && npm run dev
 
 # Database tools (from backend/)
 cd backend && npx prisma studio    # Visual DB editor
-cd backend && npx prisma db push   # Push schema changes
+cd backend && npx prisma migrate dev --name <change>   # Schema change → commit prisma/migrations
 
 # Checks
 cd backend && npm test && npx tsc --noEmit     # node:test unit tests for the finance engine
@@ -27,7 +30,7 @@ cd frontend && npx tsc -b && npm run lint && npm run build
 ## Environment Variables
 
 **Backend `backend/.env`**:
-- `DATABASE_URL=file:./dev.db` — SQLite path
+- `DATABASE_URL` / `DATABASE_URL_UNPOOLED` — PostgreSQL (pooled / direct for migrations); Neon on Vercel sets both
 - `JWT_SECRET` — JWT signing secret
 - `GROQ_API_KEY` — optional Groq key. Without it every AI endpoint still works using the finance engine (`source: "engine"`); with it the LLM only rewrites wording (`source: "ai"`).
 - `PORT=3000`
@@ -69,7 +72,8 @@ Query hooks are centralized in `frontend/src/hooks/useQueries.ts`. Import from t
 ### Backend
 
 - **Framework:** Express + TypeScript (tsx for dev) + Prisma
-- **Database:** SQLite (`backend/prisma/dev.db`)
+- **Database:** PostgreSQL via Prisma (Neon in production, `docker-compose.yml` locally). Migrations in `prisma/migrations`; Vercel's backend build runs `prisma migrate deploy`. Use `mode: 'insensitive'` for text search.
+- **Entrypoint:** `src/index.ts` exports the Express app (Vercel serverless) and only calls `listen` when `VERCEL` is unset. All routes live on one router mounted at both `/api` and `/`, so it works whether or not the platform strips the prefix. In-memory rate limits are per instance.
 - **Auth:** JWT (jsonwebtoken). Middleware at `src/middleware/auth.middleware.ts` attaches `req.userId`.
 - **Finance engine:** `src/services/finance.engine.ts` — pure, unit-tested algorithms (forecast, month-end projection, budget suggestions, insights, health score, safe-to-spend). `analytics.service.ts` assembles them; keep new calculations pure and add tests in `finance.engine.test.ts`.
 - **Dates:** `src/lib/dates.ts` — all month/day math in UTC.
@@ -129,7 +133,7 @@ All routes under `/api`. Response shape on error: `{ error: string }`. Success r
 - `PUT /api/categories/:id` → update category
 - `DELETE /api/categories/:id` → delete category
 
-### Data Model (Prisma/SQLite)
+### Data Model (Prisma/PostgreSQL)
 
 `User` (`isDemo`) → has many `Category`, `Transaction`, `Budget`. `Category.type` and `Transaction.type` are `expense` | `income`; a transaction's type always follows its category (set server-side). Budgets are expense-only. `Transaction` and `Budget` belong to a `Category`. Budget has `@@unique([userId, categoryId, month])` — one budget per category per month.
 
@@ -142,4 +146,4 @@ Default expense + income categories are seeded idempotently by `categoryService.
 - **Icons:** Lucide line icons only — no emoji. Category icons are stored as keys (`utensils`, `bus`, …) from `frontend/src/lib/categoryIcons.ts` and rendered by `CategoryIcon`; legacy emoji values are mapped on read and default categories are upgraded server-side.
 - **Shapes:** pill buttons (`rounded-full`), cards `rounded-[var(--radius-2xl)]`, sheets `--radius-3xl`; glowing ring `Orb`/`ScoreRing`.
 - **Charts/categories:** colours from a CVD-validated categorical order (`#3987e5, #d95926, #199e70, #c98500, #d55181, #9085e9`); income `#3DD9A0` vs spending `#d95926`. One y-axis per chart, legend for ≥2 series.
-- **Deploy:** API via `backend/Dockerfile` (`npm run start:prod` = `prisma db push` + start, SQLite on a `/data` volume); web on Vercel from `frontend/`.
+- **Deploy:** one Vercel project using Services (root `vercel.json`): `/api/*` → `backend` (Express function), everything else → `frontend` (Vite). The frontend build writes per-route `index.html` shells + `404.html` (`frontend/scripts/spa-routes.mjs`) — add new routes there. `backend/Dockerfile` remains as a non-Vercel alternative.

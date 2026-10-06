@@ -42,28 +42,36 @@ app.use(cors({
 
 app.use(express.json({ limit: '100kb' }))
 
-// Health check
-app.get('/api/health', (_req, res) => {
+// All endpoints live on one router. It is mounted at /api (local dev, Docker, Vercel when the
+// prefix is forwarded) and at / (in case the platform strips the /api prefix before routing).
+const api = express.Router()
+
+api.get('/health', (_req, res) => {
   res.json({ status: 'ok', ai: isAiConfigured(), timestamp: new Date().toISOString() })
 })
-
-// Routes
-app.use('/api/auth', authRouter)
-app.use('/api/categories', categoryRouter)
-app.use('/api/transactions', transactionRouter)
-app.use('/api/budgets', budgetRouter)
-app.use('/api/analytics', analyticsRouter)
-app.use('/api/ai', aiRouter)
-app.use('/api/export', exportRouter)
-app.use('/api/contact', contactRouter)
-
-app.use('/api', (_req, res) => {
+api.use('/auth', authRouter)
+api.use('/categories', categoryRouter)
+api.use('/transactions', transactionRouter)
+api.use('/budgets', budgetRouter)
+api.use('/analytics', analyticsRouter)
+api.use('/ai', aiRouter)
+api.use('/export', exportRouter)
+api.use('/contact', contactRouter)
+api.use((_req, res) => {
   res.status(404).json({ error: 'Not found' })
 })
+
+app.use('/api', api)
+app.use(api)
 
 // Error handler
 app.use(errorHandler)
 
-app.listen(PORT, () => {
-  console.log(`PennyWise API running on http://localhost:${PORT}`)
-})
+// Vercel imports the default export as a serverless handler; everywhere else we listen on a port
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`PennyWise API running on http://localhost:${PORT}`)
+  })
+}
+
+export default app

@@ -65,7 +65,7 @@ uppercase display type, pill buttons, glowing ring "orb", big rounded cards, cre
 
 ### Deploy
 - Frontend: Vercel (`frontend/`, SPA rewrite already in place). Set `VITE_API_URL`.
-- Backend: Node host with a persistent disk for SQLite (Railway/Render/Fly). `npm run build && npm run start:prod`.
+- Backend: same Vercel project via Services (`vercel.json`), PostgreSQL on Neon; SQLite was dropped because serverless file systems are ephemeral.
 
 ## 3. iOS phase (next)
 - Same REST API. Recommended path: Expo (React Native) app sharing `types` + engine-derived API responses,

@@ -19,8 +19,8 @@ function buildWhere(userId: string, filters?: TransactionFilters) {
   if (filters?.type) where.type = filters.type
   if (filters?.search) {
     where.OR = [
-      { note: { contains: filters.search } },
-      { category: { name: { contains: filters.search } } },
+      { note: { contains: filters.search, mode: 'insensitive' } },
+      { category: { name: { contains: filters.search, mode: 'insensitive' } } },
     ]
   }
   return where

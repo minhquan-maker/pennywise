@@ -1,11 +1,15 @@
 // This is your Prisma schema file
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // native for local/Docker, rhel-openssl-3.0.x for Vercel's Node runtime
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // Pooled connection for queries; direct connection for migrations (Neon on Vercel sets both)
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
 model User {
@@ -47,7 +51,7 @@ model Transaction {
   createdAt  DateTime @default(now())
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@index([userId, date])
 }
@@ -60,7 +64,7 @@ model Budget {
   month      String // "YYYY-MM"
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@unique([userId, categoryId, month])
 }
@@ -72,4 +76,6 @@ model ContactMessage {
   topic     String   @default("general")
   message   String
   createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
