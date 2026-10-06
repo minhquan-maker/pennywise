@@ -1,16 +1,17 @@
 import { prisma } from '../lib/prisma.js'
 
+// Colours follow a categorical order validated for colour-vision deficiency on the dark surface
 const DEFAULT_CATEGORIES = [
-  { name: 'Food', icon: '🍔', color: '#F97362', type: 'expense' },
-  { name: 'Transport', icon: '🚌', color: '#5B9DFF', type: 'expense' },
-  { name: 'Shopping', icon: '🛍️', color: '#B48CFF', type: 'expense' },
-  { name: 'Entertainment', icon: '🎬', color: '#FFC24B', type: 'expense' },
-  { name: 'Bills', icon: '📄', color: '#8FA3B8', type: 'expense' },
-  { name: 'Health', icon: '💊', color: '#3DDBB4', type: 'expense' },
-  { name: 'Other', icon: '💰', color: '#7C8CFF', type: 'expense' },
-  { name: 'Salary', icon: '💼', color: '#5CF03A', type: 'income' },
-  { name: 'Freelance', icon: '💻', color: '#A6F56B', type: 'income' },
-  { name: 'Gifts & Other', icon: '🎁', color: '#D8FBC6', type: 'income' },
+  { name: 'Food', icon: '🍔', color: '#d95926', type: 'expense' },
+  { name: 'Transport', icon: '🚌', color: '#3987e5', type: 'expense' },
+  { name: 'Shopping', icon: '🛍️', color: '#d55181', type: 'expense' },
+  { name: 'Entertainment', icon: '🎬', color: '#c98500', type: 'expense' },
+  { name: 'Bills', icon: '📄', color: '#9085e9', type: 'expense' },
+  { name: 'Health', icon: '💊', color: '#199e70', type: 'expense' },
+  { name: 'Other', icon: '💰', color: '#8a958c', type: 'expense' },
+  { name: 'Salary', icon: '💼', color: '#5cf03a', type: 'income' },
+  { name: 'Freelance', icon: '💻', color: '#3987e5', type: 'income' },
+  { name: 'Gifts & Other', icon: '🎁', color: '#c98500', type: 'income' },
 ]
 
 export const CATEGORY_TYPES = ['expense', 'income'] as const

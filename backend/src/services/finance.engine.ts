@@ -223,7 +223,8 @@ export interface InsightInput {
   byCategory: { name: string; total: number; prevTotal: number }[]
   /** Fraction of expense spent on Saturdays/Sundays (0..1), null if no spending. */
   weekendShare: number | null
-  budgets: { name: string; amount: number; spent: number; projected: number }[]
+  /** `atRisk` (optional) gates the "on pace to overshoot" insight on evidence from this month. */
+  budgets: { name: string; amount: number; spent: number; projected: number; atRisk?: boolean }[]
   isCurrentMonth: boolean
 }
 
@@ -254,7 +255,7 @@ export function generateInsights(input: InsightInput): Insight[] {
           severity: 'warning',
         },
       })
-    } else if (input.isCurrentMonth && b.projected > b.amount * 1.05) {
+    } else if (input.isCurrentMonth && b.atRisk !== false && b.projected > b.amount * 1.05) {
       scored.push({
         score: 80 + (b.projected / b.amount) * 10,
         insight: {

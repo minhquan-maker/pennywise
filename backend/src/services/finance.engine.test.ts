@@ -143,3 +143,17 @@ test('UTC date helpers', () => {
   assert.equal(elapsedDays('2026-09', now), 30)
   assert.equal(elapsedDays('2026-11', now), 0)
 })
+
+test('generateInsights does not flag a budget that is behind pace', () => {
+  const insights = generateInsights({
+    formatAmount: fmt,
+    expense: 50,
+    income: 0,
+    prevExpense: 0,
+    byCategory: [{ name: 'Shopping', total: 50, prevTotal: 0 }],
+    weekendShare: null,
+    budgets: [{ name: 'Shopping', amount: 200, spent: 0, projected: 290, atRisk: false }],
+    isCurrentMonth: true,
+  })
+  assert.ok(!insights.some((i) => i.title.includes('on pace')))
+})

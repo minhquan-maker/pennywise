@@ -86,7 +86,9 @@ export const analyticsService = {
         row.count += 1
         map.set(t.categoryId, row)
       }
-      for (const t of prev.filter((t) => t.type === type)) {
+      // Running month: compare with the same days of last month so deltas are like-for-like
+      const sameDays = month === currentMonth() ? elapsedDays(month) : 31
+      for (const t of prev.filter((t) => t.type === type && t.date.getUTCDate() <= sameDays)) {
         const row = map.get(t.categoryId)
         if (row) row.prevTotal += t.amount
       }
@@ -141,7 +143,11 @@ export const analyticsService = {
         const catHist = trimLeadingZeros(catHistory)
         const projected = projectMonthEnd(spent, elapsed, totalDays, catHist.length ? mean(catHist) : null)
         const pct = b.amount > 0 ? spent / b.amount : 0
-        const status = spent > b.amount ? 'over' : projected > b.amount || pct >= 0.8 ? 'warning' : 'ok'
+        // "At risk" needs evidence from this month: already ahead of an even pace AND projected over.
+        // History alone (e.g. nothing spent yet) never flags a budget.
+        const aheadOfPace = pct > elapsed / totalDays
+        const atRisk = aheadOfPace && projected > b.amount
+        const status: 'ok' | 'warning' | 'over' = spent > b.amount ? 'over' : pct >= 0.8 || atRisk ? 'warning' : 'ok'
         return {
           id: b.id,
           categoryId: b.categoryId,
@@ -154,6 +160,7 @@ export const analyticsService = {
           projected,
           pct,
           status,
+          atRisk,
         }
       })
       .sort((a, b) => b.pct - a.pct)
@@ -162,9 +169,13 @@ export const analyticsService = {
     const daysLeft = totalDays - elapsed
 
     const projectedExpense = projectMonthEnd(expense, elapsed, totalDays, historicalAvg)
-    const changePercent = prevExpense > 0 ? ((expense - prevExpense) / prevExpense) * 100 : 0
-    const savingsRate = income > 0 ? (income - expense) / income : null
     const isCurrent = month === currentMonth()
+    // For the running month compare against the same days of last month, not the full month
+    const prevToDate = isCurrent
+      ? prev.filter((t) => t.type === 'expense' && t.date.getUTCDate() <= elapsed).reduce((s, t) => s + t.amount, 0)
+      : prevExpense
+    const changePercent = prevToDate > 0 ? ((expense - prevToDate) / prevToDate) * 100 : 0
+    const savingsRate = income > 0 ? (income - expense) / income : null
     // Compare like with like: a partial current month is compared via its projection
     const comparableChange =
       prevExpense > 0 ? (((isCurrent ? projectedExpense : expense) - prevExpense) / prevExpense) * 100 : null
@@ -172,7 +183,7 @@ export const analyticsService = {
     const health = healthScore({
       savingsRate,
       budgetAdherence: budgetRows.length
-        ? budgetRows.filter((b) => (isCurrent ? b.projected : b.spent) <= b.amount).length / budgetRows.length
+        ? budgetRows.reduce((s, b) => s + (b.status === 'ok' ? 1 : b.status === 'warning' ? 0.5 : 0), 0) / budgetRows.length
         : null,
       expenseChangePercent: comparableChange,
     })
@@ -197,6 +208,7 @@ export const analyticsService = {
       income,
       net: income - expense,
       prevMonthTotal: prevExpense,
+      prevToDate,
       prevIncome,
       changePercent: Math.round(changePercent * 10) / 10,
       savingsRate,
