@@ -64,7 +64,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-dvh bg-bg">
       {/* ─── Desktop sidebar ─── */}
-      <aside className="sticky top-0 hidden h-dvh w-64 flex-shrink-0 flex-col border-r border-line bg-[linear-gradient(180deg,#0c1a10_0%,var(--color-bg)_60%)] px-4 py-6 lg:flex">
+      <aside className="sticky top-0 hidden h-dvh w-64 flex-shrink-0 flex-col border-r border-line bg-[linear-gradient(180deg,#111317_0%,var(--color-bg)_60%)] px-4 py-6 lg:flex">
         <Logo to="/dashboard" className="px-2" />
 
         <Button className="mt-8 w-full" icon={<Plus className="h-4 w-4" strokeWidth={2.5} />} onClick={() => openAdd()}>
@@ -90,7 +90,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 <>
                   <Icon className={cn('h-[18px] w-[18px]', isActive && 'text-primary-400')} />
                   {label}
-                  {isActive && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary-500 shadow-[0_0_8px_#5cf03a]" />}
+                  {isActive && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary-500 shadow-[0_0_8px_#3dd9a0]" />}
                 </>
               )}
             </NavLink>
@@ -160,7 +160,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <button
               onClick={() => openAdd()}
               aria-label="Add transaction"
-              className="-mt-6 flex h-14 w-14 items-center justify-center rounded-full bg-primary-500 text-forest shadow-[0_10px_30px_-6px_rgba(92,240,58,0.7)] transition-transform active:scale-90"
+              className="-mt-6 flex h-14 w-14 items-center justify-center rounded-full bg-primary-500 text-forest shadow-[0_10px_30px_-6px_rgba(61,217,160,0.7)] transition-transform active:scale-90"
             >
               <Plus className="h-6 w-6" strokeWidth={2.75} />
             </button>

@@ -31,7 +31,7 @@ import type { Category, TxType } from '@/types'
 
 const PRESET_ICONS = ['🍔', '🚌', '🛍️', '🎬', '📄', '💊', '💰', '🏠', '✈️', '📱', '🎮', '☕', '🛒', '🏋️', '📚', '🎁', '💼', '💻', '🐶', '👶', '🎓', '⛽', '🍺', '💡']
 // Categorical order validated for colour-vision deficiency on the dark surface
-const PRESET_COLORS = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#9085e9', '#5cf03a', '#e66767', '#8a958c']
+const PRESET_COLORS = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#9085e9', '#3dd9a0', '#e66767', '#8a958c']
 
 type CatForm = { open: boolean; editing: Category | null; name: string; icon: string; color: string; type: TxType }
 

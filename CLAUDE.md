@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AI-powered personal finance tracker: expenses and income, budgets with pace/projection, forecasts and insights. "Forest + neon" design (deep green-black, neon green accent, Anton display type) inspired by tomorro.com. Web first; a native iOS app on the same API comes next (see `docs/plan-2026-10-redesign.md`).
+AI-powered personal finance tracker: expenses and income, budgets with pace/projection, forecasts and insights. "Graphite + mint" design (neutral graphite surfaces, soft mint accent, Anton display type), layout language inspired by tomorro.com. Web first; a native iOS app on the same API comes next (see `docs/plan-2026-10-redesign.md`).
 
 ## Development Commands
 
@@ -133,8 +133,8 @@ Default expense + income categories are seeded idempotently by `categoryService.
 
 ## Design System
 
-- **Palette:** bg `#08110B`, surface `#0E1A12` / `#142419` / `#1B2F21`, line `#1F3526`, accent `#5CF03A` (`primary-500`), cream `#F1F0E8` for light marketing sections, forest `#0B1A0F` text on light.
+- **Palette:** bg `#0B0C0F`, surface `#121418` / `#191B20` / `#20232A`, line `#262A31`, accent mint `#3DD9A0` (`primary-500`), cream `#F1F0E8` for light marketing sections, `forest` `#0D1B17` text on light/mint. Avoid saturated neon or green-tinted surfaces — the user found them too harsh.
 - **Type:** Anton via `.display` (uppercase headlines), Inter body, `.num` for tabular figures, `.eyebrow` for small caps labels.
 - **Shapes:** pill buttons (`rounded-full`), cards `rounded-[var(--radius-2xl)]`, sheets `--radius-3xl`; glowing ring `Orb`/`ScoreRing`.
-- **Charts/categories:** colours from a CVD-validated categorical order (`#3987e5, #d95926, #199e70, #c98500, #d55181, #9085e9`); income `#5CF03A` vs spending `#d95926`. One y-axis per chart, legend for ≥2 series.
+- **Charts/categories:** colours from a CVD-validated categorical order (`#3987e5, #d95926, #199e70, #c98500, #d55181, #9085e9`); income `#3DD9A0` vs spending `#d95926`. One y-axis per chart, legend for ≥2 series.
 - **Deploy:** API via `backend/Dockerfile` (`npm run start:prod` = `prisma db push` + start, SQLite on a `/data` volume); web on Vercel from `frontend/`.

@@ -47,12 +47,12 @@ export function PaceChart({ data, currency }: { data: DashboardData; currency: s
           itemStyle={CHART.tooltipItem}
           labelFormatter={(l) => formatDate(String(l), { weekday: 'short', month: 'short', day: 'numeric' })}
           formatter={(v, name) => [formatCurrency(Number(v), currency), name === 'spent' ? 'Spent so far' : 'Even pace']}
-          cursor={{ stroke: '#2c4834' }}
+          cursor={{ stroke: '#353a44' }}
         />
         {target > 0 && (
           <Area type="linear" dataKey="pace" stroke={CHART.budget} strokeDasharray="5 5" strokeWidth={1.5} fill="none" dot={false} activeDot={false} isAnimationActive={false} />
         )}
-        {target > 0 && <ReferenceLine y={target} stroke="#2c4834" strokeDasharray="2 4" />}
+        {target > 0 && <ReferenceLine y={target} stroke="#353a44" strokeDasharray="2 4" />}
         <Area
           type="monotone"
           dataKey="spent"

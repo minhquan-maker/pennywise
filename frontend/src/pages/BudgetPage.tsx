@@ -374,7 +374,7 @@ export function BudgetPage() {
                       type="checkbox"
                       checked={pick.on}
                       onChange={(e) => setReview((r) => ({ ...r, picks: { ...r.picks, [s.categoryId]: { ...pick, on: e.target.checked } } }))}
-                      className="h-4 w-4 flex-shrink-0 accent-[#5cf03a]"
+                      className="h-4 w-4 flex-shrink-0 accent-[#3dd9a0]"
                       aria-label={`Apply ${s.category}`}
                     />
                     <span className="flex-1 truncate font-semibold text-text-primary">

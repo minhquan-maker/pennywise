@@ -1,6 +1,6 @@
 # PennyWise — AI Personal Finance
 
-PennyWise tracks spending and income, plans budgets that know your pace, and forecasts next month — with insights that explain every number. The interface follows a "forest + neon" design language (deep green-black surfaces, a neon-green accent, heavy condensed display type, pill controls and a glowing ring motif). It supports USD and VND and works on desktop and phones (installable to the iPhone home screen; a native iOS app is next).
+PennyWise tracks spending and income, plans budgets that know your pace, and forecasts next month — with insights that explain every number. The interface follows a "graphite + mint" design language (neutral graphite surfaces, a soft mint accent, heavy condensed display type, pill controls and a glowing ring motif). It supports USD and VND and works on desktop and phones (installable to the iPhone home screen; a native iOS app is next).
 
 All smart features run on PennyWise's own **finance engine**, so they work without any API key. When `GROQ_API_KEY` is set, an LLM additionally rewrites summaries, insights and explanations in natural language; every response is tagged `source: "ai" | "engine"`.
 
@@ -177,12 +177,12 @@ cd ../frontend && npx tsc -b && npm run lint && npm run build
 
 | Token | Value |
 | --- | --- |
-| Background | `#08110B` |
-| Surface / 2 / 3 | `#0E1A12` / `#142419` / `#1B2F21` |
-| Line / strong | `#1F3526` / `#2C4834` |
-| Accent (neon green) | `#5CF03A` |
+| Background | `#0B0C0F` |
+| Surface / 2 / 3 | `#121418` / `#191B20` / `#20232A` |
+| Line / strong | `#262A31` / `#353A44` |
+| Accent (mint) | `#3DD9A0` |
 | Cream section | `#F1F0E8` |
-| Text primary / secondary / tertiary | `#F2F6EF` / `#A9B8AB` / `#6F8274` |
+| Text primary / secondary / tertiary | `#F3F4F6` / `#A3A9B5` / `#6C7380` |
 | Display font | Anton (uppercase) |
 | Body font | Inter |
 

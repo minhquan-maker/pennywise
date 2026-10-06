@@ -105,7 +105,7 @@ function Pill({ children, tone = 'dark' }: { children: ReactNode; tone?: 'dark' 
         tone === 'dark' ? 'border border-line-strong bg-surface-2/70 text-text-secondary backdrop-blur' : 'bg-forest/8 text-forest/70'
       )}
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-primary-500 shadow-[0_0_8px_#5cf03a]" />
+      <span className="h-1.5 w-1.5 rounded-full bg-primary-500 shadow-[0_0_8px_#3dd9a0]" />
       {children}
     </span>
   )
@@ -124,7 +124,7 @@ function DashboardMock() {
         <span className="ml-3 rounded-full bg-surface-2 px-3 py-1 text-[10px] text-text-tertiary">pennywise.app/dashboard</span>
       </div>
       <div className="grid gap-3 p-4 sm:grid-cols-3 sm:p-5">
-        <div className="rounded-2xl bg-[radial-gradient(120%_120%_at_100%_0%,rgba(92,240,58,0.2),transparent_55%),var(--color-surface-2)] p-4 sm:col-span-2">
+        <div className="rounded-2xl bg-[radial-gradient(120%_120%_at_100%_0%,rgba(61,217,160,0.2),transparent_55%),var(--color-surface-2)] p-4 sm:col-span-2">
           <p className="text-[10px] uppercase tracking-widest text-text-tertiary">Net cash flow · October</p>
           <p className="display mt-1 text-4xl text-text-primary sm:text-5xl">+$1,847</p>
           <div className="mt-3 flex gap-2 text-[10px]">
@@ -133,7 +133,7 @@ function DashboardMock() {
           </div>
           <div className="mt-4 flex h-20 items-end gap-1.5">
             {bars.map((h, i) => (
-              <div key={i} className="flex-1 rounded-t-[4px]" style={{ height: `${h}%`, background: i === bars.length - 1 ? '#5cf03a' : 'var(--color-line-strong)' }} />
+              <div key={i} className="flex-1 rounded-t-[4px]" style={{ height: `${h}%`, background: i === bars.length - 1 ? '#3dd9a0' : 'var(--color-line-strong)' }} />
             ))}
           </div>
         </div>
@@ -141,7 +141,7 @@ function DashboardMock() {
           <div className="relative h-24 w-24">
             <svg viewBox="0 0 100 100" className="-rotate-90">
               <circle cx="50" cy="50" r="42" stroke="var(--color-surface-3)" strokeWidth="9" fill="none" />
-              <circle cx="50" cy="50" r="42" stroke="#5cf03a" strokeWidth="9" fill="none" strokeLinecap="round" strokeDasharray="264" strokeDashoffset="58" style={{ filter: 'drop-shadow(0 0 6px #5cf03a88)' }} />
+              <circle cx="50" cy="50" r="42" stroke="#3dd9a0" strokeWidth="9" fill="none" strokeLinecap="round" strokeDasharray="264" strokeDashoffset="58" style={{ filter: 'drop-shadow(0 0 6px #3dd9a088)' }} />
             </svg>
             <span className="display absolute inset-0 flex items-center justify-center text-3xl text-text-primary">78</span>
           </div>
@@ -210,13 +210,13 @@ function LifecycleMock({ kind }: { kind: (typeof LIFECYCLE)[number]['mock'] }) {
   return (
     <div className="rounded-2xl bg-surface-2 p-4">
       <svg viewBox="0 0 240 110" className="w-full">
-        <path d="M10 85 L50 78 L90 74 L130 66 L170 60" stroke="#5cf03a" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        <path d="M170 60 L220 48 L220 30 L170 60 L220 66 Z" fill="#5cf03a" opacity="0.14" />
-        <path d="M170 60 L220 48" stroke="#5cf03a" strokeWidth="2.5" strokeDasharray="5 5" />
+        <path d="M10 85 L50 78 L90 74 L130 66 L170 60" stroke="#3dd9a0" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+        <path d="M170 60 L220 48 L220 30 L170 60 L220 66 Z" fill="#3dd9a0" opacity="0.14" />
+        <path d="M170 60 L220 48" stroke="#3dd9a0" strokeWidth="2.5" strokeDasharray="5 5" />
         {[10, 50, 90, 130, 170].map((x, i) => (
-          <circle key={x} cx={x} cy={[85, 78, 74, 66, 60][i]} r="3.5" fill="#5cf03a" />
+          <circle key={x} cx={x} cy={[85, 78, 74, 66, 60][i]} r="3.5" fill="#3dd9a0" />
         ))}
-        <circle cx="220" cy="48" r="5" fill="#08110b" stroke="#5cf03a" strokeWidth="2.5" />
+        <circle cx="220" cy="48" r="5" fill="#0b0c0f" stroke="#3dd9a0" strokeWidth="2.5" />
       </svg>
       <p className="display mt-1 text-3xl text-text-primary">$2,775</p>
       <p className="text-[11px] text-text-tertiary">November forecast · likely $2,377 – $3,173</p>
@@ -317,7 +317,7 @@ export function LandingPage() {
             <Pill>AI-powered personal finance · free</Pill>
           </div>
           <h1 className="display animate-fade-up mx-auto mt-6 max-w-5xl text-[56px] text-text-primary [animation-delay:80ms] sm:text-[88px] lg:text-[112px]">
-            Managing money in the age of <span className="text-primary-500 drop-shadow-[0_0_30px_rgba(92,240,58,0.45)]">AI</span>
+            Managing money in the age of <span className="text-primary-500 drop-shadow-[0_0_30px_rgba(61,217,160,0.45)]">AI</span>
           </h1>
           <p className="animate-fade-up mx-auto mt-6 max-w-xl text-base leading-relaxed text-text-secondary [animation-delay:160ms] sm:text-lg">
             Track spending and income, set budgets that know your pace, and see next month before it happens — with an assistant that explains every number.
@@ -356,7 +356,7 @@ export function LandingPage() {
 
       {/* ─── Meet Penny ─── */}
       <section id="penny" className="relative overflow-hidden px-5 py-28">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(50%_40%_at_50%_30%,rgba(92,240,58,0.12),transparent_70%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(50%_40%_at_50%_30%,rgba(61,217,160,0.12),transparent_70%)]" />
         <Reveal className="relative mx-auto max-w-6xl text-center">
           <Orb className="animate-float mx-auto w-48 sm:w-60" />
           <h2 className="display mt-12 text-5xl text-text-primary sm:text-7xl">
@@ -387,7 +387,7 @@ export function LandingPage() {
               </div>
             ))}
           </div>
-          <div className="flex flex-col justify-between rounded-[var(--radius-3xl)] border border-line bg-[radial-gradient(120%_100%_at_0%_100%,rgba(92,240,58,0.18),transparent_60%),var(--color-surface)] p-6">
+          <div className="flex flex-col justify-between rounded-[var(--radius-3xl)] border border-line bg-[radial-gradient(120%_100%_at_0%_100%,rgba(61,217,160,0.18),transparent_60%),var(--color-surface)] p-6">
             <div>
               <div className="flex items-center gap-2">
                 <LogoMark className="h-6 w-6" />
@@ -517,11 +517,11 @@ export function LandingPage() {
         <Reveal className="mx-auto max-w-6xl">
           <div className="relative overflow-hidden rounded-[var(--radius-3xl)] bg-primary-200 p-8 text-forest sm:p-14">
             <svg className="pointer-events-none absolute -right-10 top-0 h-full opacity-60" viewBox="0 0 300 300" fill="none" aria-hidden>
-              <circle cx="200" cy="150" r="120" stroke="#0b1a0f" strokeWidth="2" />
-              <circle cx="200" cy="150" r="80" stroke="#0b1a0f" strokeWidth="2" />
-              <circle cx="320" cy="150" r="10" fill="#0b1a0f" />
-              <circle cx="200" cy="30" r="10" fill="#0b1a0f" />
-              <circle cx="120" cy="150" r="10" fill="#0b1a0f" />
+              <circle cx="200" cy="150" r="120" stroke="#0d1b17" strokeWidth="2" />
+              <circle cx="200" cy="150" r="80" stroke="#0d1b17" strokeWidth="2" />
+              <circle cx="320" cy="150" r="10" fill="#0d1b17" />
+              <circle cx="200" cy="30" r="10" fill="#0d1b17" />
+              <circle cx="120" cy="150" r="10" fill="#0d1b17" />
             </svg>
             <div className="relative max-w-xl">
               <h2 className="display text-5xl sm:text-6xl">Built for the web today, iPhone next</h2>

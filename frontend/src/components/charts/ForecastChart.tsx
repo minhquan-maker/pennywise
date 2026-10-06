@@ -32,7 +32,7 @@ export function ForecastChart({ prediction, currency }: { prediction: Prediction
             if (name === 'band' && Array.isArray(v)) return [`${formatCurrency(v[0], currency)} – ${formatCurrency(v[1], currency)}`, 'Likely range']
             return [formatCurrency(Number(v), currency), name === 'actual' ? 'Spent' : 'Forecast']
           }}
-          cursor={{ stroke: '#2c4834' }}
+          cursor={{ stroke: '#353a44' }}
         />
         <Area dataKey="band" stroke="none" fill={CHART.income} fillOpacity={0.12} isAnimationActive={false} />
         <Line dataKey="actual" stroke={CHART.income} strokeWidth={2} dot={{ r: 3.5, fill: CHART.income, strokeWidth: 0 }} activeDot={{ r: 5 }} />

@@ -19,7 +19,7 @@ export function WeekdayChart({ data, currency }: { data: WeekdayPoint[]; currenc
         />
         <Bar dataKey="average" radius={[4, 4, 4, 4]} animationDuration={700}>
           {data.map((d) => (
-            <Cell key={d.day} fill={d.average === max && max > 0 ? CHART.income : '#2c4834'} />
+            <Cell key={d.day} fill={d.average === max && max > 0 ? CHART.income : '#353a44'} />
           ))}
         </Bar>
       </BarChart>

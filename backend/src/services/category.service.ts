@@ -9,7 +9,7 @@ const DEFAULT_CATEGORIES = [
   { name: 'Bills', icon: '📄', color: '#9085e9', type: 'expense' },
   { name: 'Health', icon: '💊', color: '#199e70', type: 'expense' },
   { name: 'Other', icon: '💰', color: '#8a958c', type: 'expense' },
-  { name: 'Salary', icon: '💼', color: '#5cf03a', type: 'income' },
+  { name: 'Salary', icon: '💼', color: '#3dd9a0', type: 'income' },
   { name: 'Freelance', icon: '💻', color: '#3987e5', type: 'income' },
   { name: 'Gifts & Other', icon: '🎁', color: '#c98500', type: 'income' },
 ]

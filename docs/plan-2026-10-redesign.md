@@ -53,7 +53,7 @@ uppercase display type, pill buttons, glowing ring "orb", big rounded cards, cre
 7. `node:test` unit tests for the engine.
 
 ### Frontend
-1. New token-based theme (forest/neon), Anton display + Inter, grain + glow utilities, reveal-on-scroll.
+1. New token-based theme (graphite + mint; first iteration was forest/neon, toned down after feedback), Anton display + Inter, grain + glow utilities, reveal-on-scroll.
 2. Rebuilt UI kit: pill buttons, cards, bottom-sheet modal on mobile, confirm dialog, segmented control,
    month stepper, glow orb, progress ring, empty states.
 3. App shell: sidebar on desktop, iOS-style bottom tab bar with central add button on mobile.

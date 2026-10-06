@@ -14,7 +14,7 @@ const variantClasses = {
   light: 'bg-cream text-forest border border-cream-2',
   accent: 'bg-primary-500 text-forest',
   glow:
-    'bg-[radial-gradient(120%_120%_at_100%_0%,rgba(92,240,58,0.18),transparent_55%),var(--color-surface)] border border-line',
+    'bg-[radial-gradient(120%_120%_at_100%_0%,rgba(61,217,160,0.18),transparent_55%),var(--color-surface)] border border-line',
 }
 
 const paddingMap = { none: '', sm: 'p-4', md: 'p-5 sm:p-6', lg: 'p-6 sm:p-8' }

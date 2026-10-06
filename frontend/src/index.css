@@ -1,43 +1,43 @@
 @import "tailwindcss";
 
 /*
- * PennyWise design tokens — "forest + neon" (inspired by tomorro.com):
- * deep green-black surfaces, a single neon-green accent, heavy condensed uppercase display type,
+ * PennyWise design tokens — "graphite + mint" (layout language inspired by tomorro.com):
+ * neutral graphite surfaces, a single soft-mint accent, heavy condensed uppercase display type,
  * pill buttons, glowing ring "orbs", and cream contrast sections.
  */
 @theme {
-  /* Accent — neon green */
-  --color-primary-50: #f0feea;
-  --color-primary-100: #d8fbc6;
-  --color-primary-200: #b8f7a0;
-  --color-primary-300: #8ff46e;
-  --color-primary-400: #74f250;
-  --color-primary-500: #5cf03a;
-  --color-primary-600: #47d628;
-  --color-primary-700: #36ae1c;
-  --color-primary-800: #267a14;
-  --color-primary-900: #12380b;
+  /* Accent — soft mint */
+  --color-primary-50: #ecfbf5;
+  --color-primary-100: #d3f6e8;
+  --color-primary-200: #c8f5e2;
+  --color-primary-300: #8eebc8;
+  --color-primary-400: #62e2b3;
+  --color-primary-500: #3dd9a0;
+  --color-primary-600: #2cc48d;
+  --color-primary-700: #1f9e71;
+  --color-primary-800: #16714f;
+  --color-primary-900: #0b3a29;
 
-  /* Surfaces — forest black */
-  --color-bg: #08110b;
-  --color-surface: #0e1a12;
-  --color-surface-2: #142419;
-  --color-surface-3: #1b2f21;
-  --color-line: #1f3526;
-  --color-line-strong: #2c4834;
+  /* Surfaces — neutral graphite */
+  --color-bg: #0b0c0f;
+  --color-surface: #121418;
+  --color-surface-2: #191b20;
+  --color-surface-3: #20232a;
+  --color-line: #262a31;
+  --color-line-strong: #353a44;
 
   /* Light contrast sections */
   --color-cream: #f1f0e8;
   --color-cream-2: #e6e5da;
-  --color-forest: #0b1a0f;
+  --color-forest: #0d1b17;
 
   /* Text */
-  --color-text-primary: #f2f6ef;
-  --color-text-secondary: #a9b8ab;
-  --color-text-tertiary: #6f8274;
+  --color-text-primary: #f3f4f6;
+  --color-text-secondary: #a3a9b5;
+  --color-text-tertiary: #6c7380;
 
   /* Semantic */
-  --color-success-500: #5cf03a;
+  --color-success-500: #3dd9a0;
   --color-warning-500: #ffc24b;
   --color-warning-600: #e6a52a;
   --color-danger-400: #ff8a7d;
@@ -153,8 +153,8 @@
   50%      { transform: translateY(-10px); }
 }
 @keyframes pulse-ring {
-  0%   { box-shadow: 0 0 0 0 rgba(92, 240, 58, 0.45); }
-  100% { box-shadow: 0 0 0 14px rgba(92, 240, 58, 0); }
+  0%   { box-shadow: 0 0 0 0 rgba(61, 217, 160, 0.45); }
+  100% { box-shadow: 0 0 0 14px rgba(61, 217, 160, 0); }
 }
 
 /* ─── Animation utilities ─── */
@@ -222,7 +222,7 @@
 /* Soft green radial glow behind hero content */
 .glow-top {
   background:
-    radial-gradient(60% 50% at 50% 0%, rgba(92, 240, 58, 0.14) 0%, rgba(92, 240, 58, 0) 70%),
+    radial-gradient(60% 50% at 50% 0%, rgba(61, 217, 160, 0.09) 0%, rgba(61, 217, 160, 0) 70%),
     var(--color-bg);
 }
 
@@ -235,16 +235,16 @@
 .orb {
   border-radius: 9999px;
   background:
-    radial-gradient(circle at 50% 50%, #0b1a0f 52%, transparent 53%),
-    conic-gradient(from 0deg, #0b1a0f, #5cf03a 25%, #d8fbc6 32%, #36ae1c 45%, #0b1a0f 60%, #47d628 80%, #0b1a0f);
-  box-shadow: 0 0 60px rgba(92, 240, 58, 0.35), inset 0 0 40px rgba(0, 0, 0, 0.6);
+    radial-gradient(circle at 50% 50%, #111317 52%, transparent 53%),
+    conic-gradient(from 0deg, #111317, #3dd9a0 25%, #c8f5e2 32%, #1f9e71 45%, #111317 60%, #2cc48d 80%, #111317);
+  box-shadow: 0 0 50px rgba(61, 217, 160, 0.22), inset 0 0 40px rgba(0, 0, 0, 0.6);
 }
 .orb::before {
   content: '';
   position: absolute;
   inset: -18%;
   border-radius: 9999px;
-  background: radial-gradient(circle, rgba(92, 240, 58, 0.22), transparent 65%);
+  background: radial-gradient(circle, rgba(61, 217, 160, 0.14), transparent 65%);
   filter: blur(20px);
   z-index: -1;
 }

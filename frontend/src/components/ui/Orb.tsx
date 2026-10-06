@@ -26,7 +26,7 @@ export function ScoreRing({
   const r = (size - stroke) / 2
   const c = 2 * Math.PI * r
   const pct = Math.max(0, Math.min(100, value))
-  const color = pct >= 60 ? '#5cf03a' : pct >= 40 ? '#ffc24b' : '#ff6b5b'
+  const color = pct >= 60 ? '#3dd9a0' : pct >= 40 ? '#ffc24b' : '#ff6b5b'
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <div
