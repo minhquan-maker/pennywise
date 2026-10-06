@@ -11,7 +11,7 @@
     "test": "tsx --test src/**/*.test.ts",
     "typecheck": "tsc --noEmit",
     "postinstall": "prisma generate",
-    "vercel-build": "prisma generate && prisma migrate deploy",
+    "vercel-build": "node scripts/vercel-build.mjs",
     "db:migrate": "prisma migrate dev"
   },
   "keywords": [],
@@ -34,8 +34,5 @@
     "@types/node": "^22.9.0",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3"
-  },
-  "engines": {
-    "node": "22.x"
   }
 }

@@ -1,4 +1,7 @@
 import { PrismaClient } from '@prisma/client'
+import { resolveDatabaseEnv } from './dbEnv.js'
+
+export const isDatabaseConfigured = resolveDatabaseEnv()
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 

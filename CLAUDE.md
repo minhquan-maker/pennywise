@@ -73,6 +73,7 @@ Query hooks are centralized in `frontend/src/hooks/useQueries.ts`. Import from t
 
 - **Framework:** Express + TypeScript (tsx for dev) + Prisma
 - **Database:** PostgreSQL via Prisma (Neon in production, `docker-compose.yml` locally). Migrations in `prisma/migrations`; Vercel's backend build runs `prisma migrate deploy`. Use `mode: 'insensitive'` for text search.
+- **Config resilience:** `src/lib/dbEnv.ts` maps `POSTGRES_PRISMA_URL`/`POSTGRES_URL`/`POSTGRES_URL_NON_POOLING` aliases onto `DATABASE_URL(_UNPOOLED)`. Missing DB or `JWT_SECRET` → every endpoint returns 503 with an explanation and `/api/health` reports `misconfigured`; `scripts/vercel-build.mjs` skips migrations (with a warning) when no DB is connected instead of failing the deploy.
 - **Entrypoint:** `src/index.ts` exports the Express app (Vercel serverless) and only calls `listen` when `VERCEL` is unset. All routes live on one router mounted at both `/api` and `/`, so it works whether or not the platform strips the prefix. In-memory rate limits are per instance.
 - **Auth:** JWT (jsonwebtoken). Middleware at `src/middleware/auth.middleware.ts` attaches `req.userId`.
 - **Finance engine:** `src/services/finance.engine.ts` — pure, unit-tested algorithms (forecast, month-end projection, budget suggestions, insights, health score, safe-to-spend). `analytics.service.ts` assembles them; keep new calculations pure and add tests in `finance.engine.test.ts`.
