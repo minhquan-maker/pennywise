@@ -31,7 +31,8 @@ cd frontend && npx tsc -b && npm run lint && npm run build
 - `JWT_SECRET` — JWT signing secret
 - `GROQ_API_KEY` — optional Groq key. Without it every AI endpoint still works using the finance engine (`source: "engine"`); with it the LLM only rewrites wording (`source: "ai"`).
 - `PORT=3000`
-- `ALLOWED_ORIGINS` — comma-separated CORS origins (default: `http://localhost:5173,http://localhost:4173`)
+- `ALLOWED_ORIGINS` — comma-separated CORS origins, `*` wildcard allowed (default: `http://localhost:5173,http://localhost:4173`)
+- `CONTACT_WEBHOOK_URL` — optional Slack/Discord webhook for contact messages
 
 **Frontend `frontend/.env`**:
 - `VITE_API_URL=http://localhost:3000/api`
@@ -115,6 +116,9 @@ All routes under `/api`. Response shape on error: `{ error: string }`. Success r
 - `POST /api/ai/insight` → `{ insights }`
 - `POST /api/ai/predict` (no body) → `{ predicted, low, high, trendPercent, basis, reason, source }`
 - All AI responses include `source: "ai" | "engine"`; `GET /api/ai/status` → `{ ai }`
+
+**Contact (public):**
+- `POST /api/contact` `{ name, email, topic, message }` → `{ message }` — stored in `ContactMessage`, honeypot `website` field, 5/hour per IP, optional `CONTACT_WEBHOOK_URL` forward
 
 **Export routes:**
 - `GET /api/export/csv` → CSV file download

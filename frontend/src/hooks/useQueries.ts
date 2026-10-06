@@ -8,6 +8,7 @@ import {
   analyticsService,
   aiService,
   exportService,
+  contactService,
   type TransactionFilters,
 } from '@/lib/services'
 import { useAuthStore } from '@/stores/auth.store'
@@ -332,6 +333,15 @@ export function usePrediction() {
     queryKey: ['trend', 'prediction'],
     queryFn: () => aiService.predict().then((r) => r.data),
     staleTime: 10 * 60 * 1000,
+  })
+}
+
+// ─── Contact ───
+export function useSendContact() {
+  return useMutation({
+    mutationFn: (data: { name: string; email: string; topic: string; message: string; website?: string }) => contactService.send(data),
+    onSuccess: () => toast.success('Message sent — thanks!'),
+    onError: (err) => toast.error(apiError(err, 'Could not send your message')),
   })
 }
 

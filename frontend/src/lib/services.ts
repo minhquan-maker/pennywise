@@ -87,6 +87,12 @@ export const exportService = {
   },
 }
 
+// Contact (public)
+export const contactService = {
+  send: (data: { name: string; email: string; topic: string; message: string; website?: string }) =>
+    api.post<{ message: string }>('/contact', data),
+}
+
 // AI (falls back to the deterministic engine server-side when no key is configured)
 export const aiService = {
   status: () => api.get<{ ai: boolean; model: string | null }>('/ai/status'),

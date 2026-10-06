@@ -12,6 +12,7 @@ All smart features run on PennyWise's own **finance engine**, so they work witho
 - **Dashboard** — net cash flow, 0–100 financial health score, spending-pace chart, category donut, recent activity, budget health, insights, monthly summary
 - **Analytics** — 3/6/12-month income vs spending, next-month forecast with likely range, category changes vs the same period last month, weekday spending pattern
 - **Settings** — profile and currency, password change, category create/edit (icon, colour, expense/income), export, clear data, account deletion
+- **Landing page** — product overview, live-demo button, FAQ and a **Contact** form (stored in the database and optionally forwarded to Slack/Discord)
 - **Demo mode** — one click creates a throwaway account with 6 months of realistic data (expires after 24h)
 - Responsive layout with a desktop sidebar and an iOS-style bottom tab bar on phones; keyboard shortcut **N** adds a transaction
 
@@ -88,13 +89,15 @@ The Vite dev server proxies `/api` to `localhost:3000`, so `VITE_API_URL` is onl
 | `JWT_SECRET` | JWT signing secret (required) | — |
 | `GROQ_API_KEY` | Optional: LLM wording for summaries, insights and explanations | empty → engine only |
 | `PORT` | API port | `3000` |
-| `ALLOWED_ORIGINS` | Comma-separated frontend origins for CORS | localhost Vite origins |
+| `ALLOWED_ORIGINS` | Comma-separated frontend origins for CORS; `*` wildcard allowed (e.g. `https://pennywise-*.vercel.app`) | localhost Vite origins |
+| `CONTACT_WEBHOOK_URL` | Optional Slack/Discord incoming webhook for contact-form messages | empty |
 
 ### Frontend
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
 | `VITE_API_URL` | Backend API base URL | `/api` |
+| `VITE_CONTACT_EMAIL` | Optional email shown in the Contact section | empty |
 
 Never commit `.env` files or API keys.
 
@@ -105,6 +108,15 @@ Never commit `.env` files or API keys.
 Without Docker: `npm ci && npm run build && npm run start:prod`.
 
 **Web (Vercel):** import the repo with root directory `frontend/` (framework: Vite). Set `VITE_API_URL=https://<your-api-host>/api`. `frontend/vercel.json` rewrites all routes to the SPA.
+
+### Deploy checklist
+
+1. Deploy the API first; note its URL and confirm `GET /api/health` returns `{"status":"ok"}`.
+2. API env: `JWT_SECRET` (long random string), `ALLOWED_ORIGINS=https://<your-app>.vercel.app,https://<project>-*.vercel.app`, volume mounted at `/data`; optional `GROQ_API_KEY`, `CONTACT_WEBHOOK_URL`.
+3. Vercel env: `VITE_API_URL=https://<api-host>/api` (and optional `VITE_CONTACT_EMAIL`), then deploy.
+4. Smoke test: open the site → **Try the live demo** → add a transaction → send a Contact message.
+
+Contact messages are stored in the `ContactMessage` table (browse with `npx prisma studio`) and forwarded to `CONTACT_WEBHOOK_URL` when set.
 
 ## API Reference
 
@@ -165,6 +177,7 @@ All protected endpoints require `Authorization: Bearer <token>`. Errors return `
 | `POST` | `/api/ai/insight` | Three insights `{ month }` |
 | `POST` | `/api/ai/predict` | Forecast + explanation |
 | `GET` | `/api/export/csv?month=` | CSV download (UTF-8 with BOM) |
+| `POST` | `/api/contact` | Public contact form `{ name, email, topic, message }` (rate-limited) |
 
 ## Development Checks
 

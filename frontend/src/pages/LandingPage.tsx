@@ -20,6 +20,7 @@ import { useScrollReveal } from '@/hooks/useScrollReveal'
 import { useDemoLogin } from '@/hooks/useQueries'
 import { CategoryIcon } from '@/components/ui/CategoryIcon'
 import { cn } from '@/lib/utils'
+import { ContactSection } from '@/components/landing/ContactSection'
 
 /* ─────────────────────────── content ─────────────────────────── */
 
@@ -28,6 +29,7 @@ const NAV = [
   { id: 'penny', label: 'Penny AI' },
   { id: 'reviews', label: 'Reviews' },
   { id: 'faq', label: 'FAQ' },
+  { id: 'contact', label: 'Contact' },
 ]
 
 const MARQUEE = ['Cash flow', 'Smart budgets', 'Forecasts', 'Spending pace', 'Health score', 'AI insights', 'CSV export', 'USD & VND', 'Weekday patterns', 'Undo anything']
@@ -562,6 +564,9 @@ export function LandingPage() {
         </Reveal>
       </section>
 
+      {/* ─── Contact ─── */}
+      <ContactSection />
+
       {/* ─── Final CTA ─── */}
       <section className="bg-cream px-5 pb-28 text-center text-forest">
         <Reveal>
@@ -598,7 +603,7 @@ export function LandingPage() {
               <p className="mt-4 max-w-xs text-sm text-text-tertiary">AI-powered personal finance — track, plan and predict.</p>
             </div>
             {[
-              { h: 'Product', l: [['Features', 'features'], ['Penny AI', 'penny'], ['FAQ', 'faq']] },
+              { h: 'Product', l: [['Features', 'features'], ['Penny AI', 'penny'], ['FAQ', 'faq'], ['Contact', 'contact']] },
               { h: 'Account', l: [['Sign in', '/login'], ['Create account', '/register']] },
               { h: 'Project', l: [['GitHub', 'https://github.com/minhquan-maker/pennywise'], ['Author', 'https://minhquannguyen.vercel.app']] },
             ].map((col) => (
