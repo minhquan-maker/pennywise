@@ -118,7 +118,7 @@ The root `vercel.json` deploys both apps as **Vercel Services** on one domain: `
 5. **Deploy.** The backend build runs `prisma migrate deploy`, so tables are created on the first deploy.
 6. **Smoke test:** open `https://<project>.vercel.app/api/health` (should return `{"status":"ok"}`), then the site → **Try the live demo** → add a transaction → send a Contact message.
 
-If the database is connected after the first deploy, redeploy once so the migration runs.
+If the database is connected after the first deploy, redeploy once so the migration runs. Until a database and `JWT_SECRET` exist, the build still succeeds (migrations are skipped with a warning) and `/api/health` reports what is missing.
 
 Contact messages are stored in the `ContactMessage` table (browse with `npx prisma studio` or Neon's console) and forwarded to `CONTACT_WEBHOOK_URL` when set.
 

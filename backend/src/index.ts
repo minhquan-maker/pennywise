@@ -11,10 +11,15 @@ import { aiRouter } from './routes/ai.routes.js'
 import { exportRouter } from './routes/export.routes.js'
 import { contactRouter } from './routes/contact.routes.js'
 import { isAiConfigured } from './services/ai.service.js'
+import { isDatabaseConfigured } from './lib/prisma.js'
 
-if (!process.env.JWT_SECRET) {
-  throw new Error('JWT_SECRET must be set')
-}
+// Missing config should produce a clear API error, not a crashed serverless function
+const configError = !process.env.JWT_SECRET
+  ? 'Server misconfigured: JWT_SECRET is not set. Add it in the hosting environment variables and redeploy.'
+  : !isDatabaseConfigured
+    ? 'Database not configured. Connect a Postgres database (Vercel → Storage → Neon) and redeploy.'
+    : null
+if (configError) console.error('[config]', configError)
 
 const app = express()
 app.set('trust proxy', 1)
@@ -47,7 +52,11 @@ app.use(express.json({ limit: '100kb' }))
 const api = express.Router()
 
 api.get('/health', (_req, res) => {
-  res.json({ status: 'ok', ai: isAiConfigured(), timestamp: new Date().toISOString() })
+  res.json({ status: configError ? 'misconfigured' : 'ok', error: configError ?? undefined, database: isDatabaseConfigured, jwt: !!process.env.JWT_SECRET, ai: isAiConfigured(), timestamp: new Date().toISOString() })
+})
+api.use((_req, res, next) => {
+  if (!configError) return next()
+  res.status(503).json({ error: configError })
 })
 api.use('/auth', authRouter)
 api.use('/categories', categoryRouter)
