@@ -8,6 +8,7 @@ export const budgetService = {
     return prisma.budget.findMany({
       where,
       include: { category: true },
+      orderBy: { amount: 'desc' },
     })
   },
 

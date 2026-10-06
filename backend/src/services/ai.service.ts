@@ -3,9 +3,26 @@ interface GroqMessage {
   content: string
 }
 
+export function isAiConfigured(): boolean {
+  const apiKey = process.env.GROQ_API_KEY
+  return Boolean(apiKey && apiKey !== 'gsk_your_key_here')
+}
+
+/** Strip markdown fences and parse a JSON payload from an LLM reply. Returns null if unparseable. */
+export function parseJsonReply<T>(text: string): T | null {
+  const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+  const start = cleaned.search(/[[{]/)
+  if (start === -1) return null
+  try {
+    return JSON.parse(cleaned.slice(start)) as T
+  } catch {
+    return null
+  }
+}
+
 export async function callGroq(messages: GroqMessage[]): Promise<string> {
   const apiKey = process.env.GROQ_API_KEY
-  if (!apiKey || apiKey === 'gsk_your_key_here') {
+  if (!isAiConfigured()) {
     throw new Error('GROQ_API_KEY not configured')
   }
 
@@ -15,6 +32,7 @@ export async function callGroq(messages: GroqMessage[]): Promise<string> {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
+    signal: AbortSignal.timeout(20_000),
     body: JSON.stringify({
       model: 'llama-3.3-70b-versatile',
       messages,

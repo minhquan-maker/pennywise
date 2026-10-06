@@ -1,55 +1,93 @@
-import { Router } from 'express'
-import { callGroq } from '../services/ai.service.js'
+import { Router, type Response } from 'express'
+import { callGroq, isAiConfigured, parseJsonReply } from '../services/ai.service.js'
 import { analyticsService } from '../services/analytics.service.js'
+import { formatMoney, type Insight } from '../services/finance.engine.js'
 import { authMiddleware } from '../middleware/auth.middleware.js'
-import { prisma } from '../lib/prisma.js'
+import { currentMonth, isValidMonth } from '../lib/dates.js'
 
-const MONTH_REGEX = /^\d{4}-\d{2}$/
-
-function validateMonth(month: string | undefined, sendError: (code: number, msg: string) => void): boolean {
-  if (month && !MONTH_REGEX.test(month)) {
-    sendError(400, 'month must be in YYYY-MM format')
-    return false
-  }
-  return true
-}
+// Every endpoint computes a deterministic answer with the finance engine first. When a Groq key
+// is configured the LLM only rewrites/enriches that answer; any AI failure falls back to the
+// engine result, so the features always work. Responses carry `source: "ai" | "engine"`.
 
 export const aiRouter = Router()
 aiRouter.use(authMiddleware)
 
+function readMonth(body: unknown, res: Response): string | null {
+  const month = (body as { month?: unknown })?.month
+  if (month === undefined || month === null || month === '') return currentMonth()
+  if (!isValidMonth(month)) {
+    res.status(400).json({ error: 'month must be in YYYY-MM format' })
+    return null
+  }
+  return month
+}
+
+async function tryAi<T>(fn: () => Promise<T | null>): Promise<T | null> {
+  if (!isAiConfigured()) return null
+  try {
+    return await fn()
+  } catch (err) {
+    console.warn('[AI fallback]', (err as Error).message)
+    return null
+  }
+}
+
+aiRouter.get('/status', (_req, res) => {
+  res.json({ ai: isAiConfigured(), model: isAiConfigured() ? 'llama-3.3-70b-versatile' : null })
+})
+
 aiRouter.post('/summary', async (req, res, next) => {
   try {
-    const { month } = req.body
-    if (!validateMonth(month, (code, msg) => res.status(code).json({ error: msg }))) return
+    const month = readMonth(req.body, res)
+    if (!month) return
+    const d = await analyticsService.getDashboard(req.userId!, month)
+    const fmt = (n: number) => formatMoney(n, d.currency)
 
-    const user = await prisma.user.findUnique({ where: { id: req.userId! } })
-    const currency = user?.currency || 'USD'
+    const top = d.byCategory.slice(0, 3)
+    const facts = [
+      `Month: ${d.month}${d.month === currentMonth() ? ` (day ${d.elapsedDays} of ${d.daysInMonth})` : ''}`,
+      `Spent: ${fmt(d.expense)}; income: ${fmt(d.income)}; net: ${fmt(d.net)}`,
+      d.savingsRate !== null ? `Savings rate: ${Math.round(d.savingsRate * 100)}%` : 'No income recorded',
+      `Top categories: ${top.map((c) => `${c.name} ${fmt(c.total)} (${Math.round(c.share * 100)}%)`).join(', ') || 'none'}`,
+      d.prevMonthTotal > 0 ? `Previous month spent: ${fmt(d.prevMonthTotal)}` : 'No previous month data',
+      d.month === currentMonth() ? `Projected month-end spending: ${fmt(d.projectedExpense)}` : '',
+      `Health score: ${d.health.score}/100 (${d.health.label})`,
+    ].filter(Boolean)
 
-    const dashboard = await analyticsService.getDashboard(req.userId!, month)
+    // Engine summary
+    let summary: string
+    if (d.transactionCount === 0) {
+      summary = `No transactions recorded for ${d.month} yet. Log a few expenses and income to get a monthly summary.`
+    } else {
+      const lead = top[0]
+        ? `${top[0].name} leads at ${fmt(top[0].total)} (${Math.round(top[0].share * 100)}% of spending).`
+        : ''
+      const change =
+        d.prevMonthTotal > 0
+          ? ` That's ${d.changePercent >= 0 ? 'up' : 'down'} ${Math.abs(d.changePercent)}% on last month.`
+          : ''
+      const saving =
+        d.savingsRate !== null ? ` You're keeping ${Math.round(d.savingsRate * 100)}% of your income.` : ''
+      summary = `You've spent ${fmt(d.expense)} in ${d.month}.${change} ${lead}${saving} ${d.insights[0]?.body ?? ''}`
+        .replace(/\s+/g, ' ')
+        .trim()
+    }
 
-    const currencyStr = currency === 'VND' ? 'VND' : '$'
-    const formatAmount = (n: number) =>
-      currency === 'VND' ? `${n.toLocaleString()} ${currencyStr}` : `${currencyStr}${n.toFixed(2)}`
-
-    const topCategories = dashboard.byCategory
-      .slice(0, 3)
-      .map((c) => `${c.name} (${formatAmount(c.total)})`)
-      .join(', ')
-
-    const comparison =
-      dashboard.changePercent > 0
-        ? `up ${Math.abs(dashboard.changePercent)}% vs last month`
-        : `down ${Math.abs(dashboard.changePercent)}% vs last month`
-
-    const prompt = `You are a friendly financial advisor. Based on spending data for ${dashboard.month}:
-- Total spent: ${formatAmount(dashboard.total)}
-- Top 3 categories: ${topCategories || 'No transactions'}
-- Change: ${comparison}
-
-Write a concise 2-3 sentence summary in English, highlighting key patterns and one specific actionable recommendation. Keep it natural and encouraging, not preachy.`
-
-    const text = await callGroq([{ role: 'user', content: prompt }])
-    res.json({ summary: text })
+    const ai = await tryAi(async () =>
+      d.transactionCount === 0
+        ? null
+        : callGroq([
+            {
+              role: 'system',
+              content: 'You are a concise, friendly personal finance coach. Use only the numbers provided. Never invent figures.',
+            },
+            {
+              role: 'user',
+              content: `${facts.join('\n')}\n\nWrite a 2-3 sentence summary in English highlighting the key pattern and one specific, actionable recommendation. Encouraging, not preachy.`,
+            },
+          ])
+    )
+    res.json({ summary: ai ?? summary, source: ai ? 'ai' : 'engine' })
   } catch (err) {
     next(err)
   }
@@ -57,51 +95,34 @@ Write a concise 2-3 sentence summary in English, highlighting key patterns and o
 
 aiRouter.post('/suggest-budget', async (req, res, next) => {
   try {
-    const { month } = req.body
-    if (!validateMonth(month, (code, msg) => res.status(code).json({ error: msg }))) return
-
-    const user = await prisma.user.findUnique({ where: { id: req.userId! } })
-    const currency = user?.currency || 'USD'
-    const dashboard = await analyticsService.getDashboard(req.userId!, month)
-
-    const currencyStr = currency === 'VND' ? 'VND' : '$'
-    const formatAmount = (n: number) =>
-      currency === 'VND' ? `${n.toLocaleString()} ${currencyStr}` : `${currencyStr}${n.toFixed(2)}`
-
-    const history = dashboard.byCategory
-      .map((c) => `${c.name}: ${formatAmount(c.total)}`)
-      .join('\n')
-
-    const prompt = `Based on this user's spending history for ${dashboard.month}:
-${history || 'No transaction history available'}
-
-Suggest a monthly budget for each category for next month. Return ONLY a JSON array (no markdown, no explanation), with this exact format:
-[{"category": "Food", "suggestedBudget": 150, "reason": "Your spending was..."}]
-
-Use ${currencyStr} as currency. Keep budgets realistic based on history.`
-
-    let text = await callGroq([{ role: 'user', content: prompt }])
-    text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-
-    let suggestions
-    try {
-      suggestions = JSON.parse(text)
-    } catch {
-      res.status(500).json({ error: 'AI returned an invalid response. Please try again.' })
+    const month = readMonth(req.body, res)
+    if (!month) return
+    const { suggestions, currency } = await analyticsService.getBudgetSuggestions(req.userId!, month)
+    if (!suggestions.length) {
+      res.json({ suggestions: [], source: 'engine' })
       return
     }
 
-    if (
-      !Array.isArray(suggestions) ||
-      !suggestions.every(
-        (s) => s.category && typeof s.suggestedBudget === 'number'
-      )
-    ) {
-      res.status(500).json({ error: 'AI response did not match expected format. Please try again.' })
-      return
-    }
+    // Let the LLM rewrite the reasons only — amounts stay deterministic and auditable.
+    const reasons = await tryAi(async () => {
+      const text = await callGroq([
+        { role: 'system', content: 'You write short, specific budgeting advice. Reply with JSON only.' },
+        {
+          role: 'user',
+          content: `Currency ${currency}. For each budget below write a one-sentence reason (max 22 words) referencing the average and trend.\n${JSON.stringify(
+            suggestions.map((s) => ({ category: s.category, budget: s.suggestedBudget, average: s.average, trendPercent: s.trendPercent }))
+          )}\nReturn a JSON array: [{"category": "...", "reason": "..."}]`,
+        },
+      ])
+      const parsed = parseJsonReply<{ category: string; reason: string }[]>(text)
+      return Array.isArray(parsed) ? parsed : null
+    })
 
-    res.json({ suggestions })
+    const byName = new Map((reasons ?? []).filter((r) => r?.category && r?.reason).map((r) => [r.category, r.reason]))
+    res.json({
+      suggestions: suggestions.map((s) => ({ ...s, reason: byName.get(s.category) ?? s.reason })),
+      source: byName.size ? 'ai' : 'engine',
+    })
   } catch (err) {
     next(err)
   }
@@ -109,48 +130,36 @@ Use ${currencyStr} as currency. Keep budgets realistic based on history.`
 
 aiRouter.post('/insight', async (req, res, next) => {
   try {
-    const { month } = req.body
-    if (!validateMonth(month, (code, msg) => res.status(code).json({ error: msg }))) return
+    const month = readMonth(req.body, res)
+    if (!month) return
+    const d = await analyticsService.getDashboard(req.userId!, month)
+    const fmt = (n: number) => formatMoney(n, d.currency)
+    const engine: Insight[] = d.insights
 
-    const user = await prisma.user.findUnique({ where: { id: req.userId! } })
-    const currency = user?.currency || 'USD'
-    const dashboard = await analyticsService.getDashboard(req.userId!, month)
-
-    const currencyStr = currency === 'VND' ? 'VND' : '$'
-    const formatAmount = (n: number) =>
-      currency === 'VND' ? `${n.toLocaleString()} ${currencyStr}` : `${currencyStr}${n.toFixed(2)}`
-
-    const breakdown = dashboard.byCategory
-      .map(
-        (c) =>
-          `${c.name}: ${formatAmount(c.total)} (${dashboard.total > 0 ? Math.round((c.total / dashboard.total) * 100) : 0}%)`
-      )
-      .join('\n')
-
-    const prompt = `Analyze this month's spending:
-- Total: ${formatAmount(dashboard.total)}
-- Categories:\n${breakdown || 'No transactions'}
-
-Give exactly 3 short, actionable insights in English to help reduce spending. Format as a JSON array:
-[{"insight": "...", "category": "Food"}, {"insight": "...", "category": "Transport"}, {"insight": "...", "category": "Overall"}]`
-
-    let text = await callGroq([{ role: 'user', content: prompt }])
-    text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-
-    let insights
-    try {
-      insights = JSON.parse(text)
-    } catch {
-      res.status(500).json({ error: 'AI returned an invalid response. Please try again.' })
-      return
-    }
-
-    if (!Array.isArray(insights) || insights.length !== 3) {
-      res.status(500).json({ error: 'AI response did not match expected format. Please try again.' })
-      return
-    }
-
-    res.json({ insights })
+    const ai = await tryAi(async () => {
+      if (d.transactionCount === 0) return null
+      const breakdown = d.byCategory
+        .map((c) => `${c.name}: ${fmt(c.total)} (${Math.round(c.share * 100)}%, last month ${fmt(c.prevTotal)})`)
+        .join('\n')
+      const text = await callGroq([
+        { role: 'system', content: 'You are a personal finance analyst. Use only the given numbers. Reply with JSON only.' },
+        {
+          role: 'user',
+          content: `Spending ${fmt(d.expense)}, income ${fmt(d.income)}.\nCategories:\n${breakdown}\nBudgets: ${d.budget.items
+            .map((b) => `${b.name} ${fmt(b.spent)}/${fmt(b.amount)}`)
+            .join(', ') || 'none'}\nDetected signals: ${engine.map((i) => i.title).join('; ')}\n\nGive exactly 3 short actionable insights. JSON array: [{"title": "max 6 words", "body": "1-2 sentences", "category": "Food|Overall|...", "severity": "positive|warning|info"}]`,
+        },
+      ])
+      const parsed = parseJsonReply<Insight[]>(text)
+      if (!Array.isArray(parsed) || parsed.length === 0) return null
+      return parsed.slice(0, 3).map((i) => ({
+        title: String(i.title ?? '').slice(0, 80),
+        body: String(i.body ?? (i as unknown as { insight?: string }).insight ?? ''),
+        category: String(i.category ?? 'Overall'),
+        severity: (['positive', 'warning', 'info'].includes(i.severity) ? i.severity : 'info') as Insight['severity'],
+      }))
+    })
+    res.json({ insights: ai ?? engine, source: ai ? 'ai' : 'engine' })
   } catch (err) {
     next(err)
   }
@@ -158,38 +167,42 @@ Give exactly 3 short, actionable insights in English to help reduce spending. Fo
 
 aiRouter.post('/predict', async (req, res, next) => {
   try {
-    const trend = await analyticsService.getTrend(req.userId!, 6)
+    const f = await analyticsService.getForecast(req.userId!)
+    const fmt = (n: number) => formatMoney(n, f.currency)
 
-    if (trend.length < 2) {
-      res.json({
-        predicted: 0,
-        changePercent: 0,
-        reason: 'Not enough data for prediction. Add more transactions over time.',
-      })
-      return
+    let reason: string
+    if (f.monthsUsed === 0) {
+      reason = 'Not enough data for a prediction yet. Add transactions over a few months.'
+    } else if (f.monthsUsed === 1) {
+      reason = `Based on a single month of data (${fmt(f.basis[f.basis.length - 1].total)}); accuracy improves as history grows.`
+    } else {
+      const dir = f.trendPercent > 2 ? 'rising' : f.trendPercent < -2 ? 'falling' : 'flat'
+      reason = `Your spending trend is ${dir} (${f.trendPercent > 0 ? '+' : ''}${f.trendPercent}%/month over ${f.monthsUsed} months); this month is projected at ${fmt(f.currentProjected)}.`
     }
 
-    const user = await prisma.user.findUnique({ where: { id: req.userId! } })
-    const currency = user?.currency || 'USD'
-    const currencyStr = currency === 'VND' ? 'VND' : '$'
-    const formatAmount = (n: number) =>
-      currency === 'VND' ? `${n.toLocaleString()} ${currencyStr}` : `${currencyStr}${n.toFixed(2)}`
+    const ai = await tryAi(async () =>
+      f.monthsUsed < 2
+        ? null
+        : callGroq([
+            { role: 'system', content: 'You explain forecasts in one plain sentence. Use only the provided numbers.' },
+            {
+              role: 'user',
+              content: `Monthly spending: ${f.basis.map((b) => `${b.month}: ${fmt(b.total)}`).join(', ')} (last one is a month-end projection).\nForecast for ${f.month}: ${fmt(f.predicted)} (range ${fmt(f.low)}–${fmt(f.high)}), trend ${f.trendPercent}%/month.\nExplain this prediction in one sentence.`,
+            },
+          ])
+    )
 
-    const avg = trend.reduce((s, t) => s + t.total, 0) / trend.length
-    const recent = trend.slice(-2).reduce((s, t) => s + t.total, 0) / 2
-    const changePercent = avg > 0 ? ((recent - avg) / avg) * 100 : 0
-    const predicted = Math.round(recent * (1 + changePercent / 100))
-
-    const prompt = `Based on 6 months of spending data: ${trend.map((t) => `${t.month}: ${formatAmount(t.total)}`).join(', ')}
-Predicted next month: ${formatAmount(predicted)} (${changePercent > 0 ? '+' : ''}${changePercent.toFixed(1)}%).
-
-Give a one-sentence reason in English explaining this prediction briefly.`
-
-    const reason = await callGroq([{ role: 'user', content: prompt }])
     res.json({
-      predicted: Math.round(predicted),
-      changePercent: Math.round(changePercent * 10) / 10,
-      reason,
+      predicted: Math.round(f.predicted),
+      low: Math.round(f.low),
+      high: Math.round(f.high),
+      changePercent: f.changePercent,
+      trendPercent: f.trendPercent,
+      month: f.month,
+      basis: f.basis,
+      method: f.method,
+      reason: ai ?? reason,
+      source: ai ? 'ai' : 'engine',
     })
   } catch (err) {
     next(err)

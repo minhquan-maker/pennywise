@@ -1,19 +1,6 @@
 import { cn } from '@/lib/utils'
 
-interface SkeletonProps {
-  className?: string
-  variant?: 'text' | 'rectangular' | 'circular'
-}
-
-export function Skeleton({ className = '', variant = 'rectangular' }: SkeletonProps) {
-  const variantClass = {
-    text:         'rounded h-4',
-    rectangular:  'rounded-lg',
-    circular:     'rounded-full',
-  }
+export function Skeleton({ className = '', variant = 'rectangular' }: { className?: string; variant?: 'text' | 'rectangular' | 'circular' }) {
+  const variantClass = { text: 'h-4 rounded-md', rectangular: 'rounded-xl', circular: 'rounded-full' }
   return <div className={cn('skeleton', variantClass[variant], className)} />
-}
-
-export function SkeletonCard({ className = '' }: { className?: string }) {
-  return <div className={cn('skeleton rounded-xl', className)} />
 }

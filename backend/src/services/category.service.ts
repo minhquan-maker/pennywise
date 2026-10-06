@@ -1,33 +1,69 @@
 import { prisma } from '../lib/prisma.js'
 
+// Icons are keys into the frontend's Lucide icon registry (frontend/src/lib/categoryIcons.ts).
+// Colours follow a categorical order validated for colour-vision deficiency on the dark surface.
 const DEFAULT_CATEGORIES = [
-  { name: 'Food', icon: '🍔', color: '#ef4444', isDefault: true },
-  { name: 'Transport', icon: '🚌', color: '#3b82f6', isDefault: true },
-  { name: 'Shopping', icon: '🛍️', color: '#8b5cf6', isDefault: true },
-  { name: 'Entertainment', icon: '🎬', color: '#f59e0b', isDefault: true },
-  { name: 'Bills', icon: '📄', color: '#64748b', isDefault: true },
-  { name: 'Health', icon: '💊', color: '#10b981', isDefault: true },
-  { name: 'Other', icon: '💰', color: '#6366f1', isDefault: true },
+  { name: 'Food', icon: 'utensils', color: '#d95926', type: 'expense' },
+  { name: 'Transport', icon: 'bus', color: '#3987e5', type: 'expense' },
+  { name: 'Shopping', icon: 'shopping-bag', color: '#d55181', type: 'expense' },
+  { name: 'Entertainment', icon: 'film', color: '#c98500', type: 'expense' },
+  { name: 'Bills', icon: 'receipt', color: '#9085e9', type: 'expense' },
+  { name: 'Health', icon: 'health', color: '#199e70', type: 'expense' },
+  { name: 'Other', icon: 'other', color: '#8a958c', type: 'expense' },
+  { name: 'Salary', icon: 'briefcase', color: '#3dd9a0', type: 'income' },
+  { name: 'Freelance', icon: 'laptop', color: '#3987e5', type: 'income' },
+  { name: 'Gifts & Other', icon: 'gift', color: '#c98500', type: 'income' },
 ]
 
-export const categoryService = {
-  async seedDefaultCategories(userId: string) {
-    const existing = await prisma.category.findFirst({ where: { userId, isDefault: true } })
-    if (existing) return
+const LEGACY_DEFAULT_ICONS: Record<string, string> = {
+  '🍔': 'utensils',
+  '🚌': 'bus',
+  '🛍️': 'shopping-bag',
+  '🎬': 'film',
+  '📄': 'receipt',
+  '💊': 'health',
+  '💰': 'other',
+  '💼': 'briefcase',
+  '💻': 'laptop',
+  '🎁': 'gift',
+}
 
-    await prisma.category.createMany({
-      data: DEFAULT_CATEGORIES.map((cat) => ({ ...cat, userId })),
+export const CATEGORY_TYPES = ['expense', 'income'] as const
+
+export const categoryService = {
+  /** Idempotently add any missing default categories (also back-fills income defaults for older accounts). */
+  async seedDefaultCategories(userId: string) {
+    const existing = await prisma.category.findMany({
+      where: { userId, isDefault: true },
+      select: { name: true, type: true, icon: true },
     })
+    // One-time upgrade: default categories created before icon keys stored emoji
+    const legacy = existing.filter((c) => LEGACY_DEFAULT_ICONS[c.icon])
+    if (legacy.length) {
+      await Promise.all(
+        [...new Set(legacy.map((c) => c.icon))].map((emoji) =>
+          prisma.category.updateMany({ where: { userId, isDefault: true, icon: emoji }, data: { icon: LEGACY_DEFAULT_ICONS[emoji] } })
+        )
+      )
+    }
+    const have = new Set(existing.map((c) => `${c.type}:${c.name}`))
+    const missing = DEFAULT_CATEGORIES.filter((c) => !have.has(`${c.type}:${c.name}`))
+    if (missing.length) {
+      await prisma.category.createMany({
+        data: missing.map((cat) => ({ ...cat, userId, isDefault: true })),
+      })
+    }
   },
 
   async getAll(userId: string) {
+    await this.seedDefaultCategories(userId)
     return prisma.category.findMany({
       where: { userId },
-      orderBy: { name: 'asc' },
+      orderBy: [{ type: 'asc' }, { name: 'asc' }],
     })
   },
 
-  async create(userId: string, data: { name: string; icon: string; color: string }) {
+  async create(userId: string, data: { name: string; icon: string; color: string; type: string }) {
     return prisma.category.create({
       data: { ...data, userId, isDefault: false },
     })

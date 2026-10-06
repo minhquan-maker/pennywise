@@ -1,210 +1,222 @@
 import { useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Target, Sparkles, Plus, X, Trash2, ChevronUp } from 'lucide-react'
-import { Card } from '@/components/ui/Card'
+import { CalendarClock, Copy, Plus, Sparkles, Target, Trash2, TrendingUp } from 'lucide-react'
+import { Card, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
-import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { toast } from 'sonner'
-import { formatCurrency, getCurrentMonth, formatMonth, cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/Badge'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { MonthStepper } from '@/components/ui/MonthStepper'
+import { ProgressBar } from '@/components/ui/ProgressBar'
+import { CategoryIcon } from '@/components/ui/CategoryIcon'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { SourceTag } from '@/components/ui/SourceTag'
+import { fieldClass } from '@/components/ui/Input'
+import { cn, currencySymbol, formatCurrency, formatMonth, formatPercent, getCurrentMonth } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
-import { useCategories, useBudgets, useUpsertBudget, useDeleteBudget, useClearAllBudgets, useAISuggestBudget } from '@/hooks/useQueries'
-import { analyticsService } from '@/lib/services'
+import {
+  useAISuggestBudget,
+  useBulkBudgets,
+  useCategories,
+  useClearBudgets,
+  useCopyBudgets,
+  useDashboard,
+  useDeleteBudget,
+  useUpsertBudget,
+} from '@/hooks/useQueries'
+import type { BudgetStatus, BudgetSuggestion } from '@/types'
+
+const STATUS = {
+  ok: { label: 'On track', color: 'var(--color-primary-500)' },
+  warning: { label: 'At risk', color: 'var(--color-warning-500)' },
+  over: { label: 'Over', color: 'var(--color-danger-500)' },
+}
 
 export function BudgetPage() {
-  const user = useAuthStore((s) => s.user)
-  const currency = user?.currency || 'USD'
+  const currency = useAuthStore((s) => s.user?.currency) || 'USD'
   const [month, setMonth] = useState(getCurrentMonth())
-  const [modalOpen, setModalOpen] = useState(false)
-  const [formCategory, setFormCategory] = useState('')
-  const [formAmount, setFormAmount] = useState('')
+  const isCurrent = month === getCurrentMonth()
+  const fmt = (n: number) => formatCurrency(n, currency)
 
-  const qc = useQueryClient()
+  const { data: d, isLoading } = useDashboard(month)
+  const { data: expenseCats = [] } = useCategories('expense')
+  const upsert = useUpsertBudget()
+  const remove = useDeleteBudget()
+  const copy = useCopyBudgets()
+  const clear = useClearBudgets()
+  const suggest = useAISuggestBudget()
+  const bulk = useBulkBudgets()
 
-  const { data: budgets = [], isLoading } = useBudgets(month)
-  const { data: categories = [] } = useCategories()
-
-  const { data: dashboardData } = useQuery({
-    queryKey: ['dashboard', month],
-    queryFn: () => analyticsService.dashboard(month).then((r) => r.data!),
+  const [editor, setEditor] = useState<{ open: boolean; budget: BudgetStatus | null; categoryId: string; amount: string }>({
+    open: false,
+    budget: null,
+    categoryId: '',
+    amount: '',
   })
+  const [review, setReview] = useState<{ open: boolean; picks: Record<string, { on: boolean; amount: string }> }>({ open: false, picks: {} })
+  const [confirmClear, setConfirmClear] = useState(false)
 
-  const upsertBudget = useUpsertBudget()
-  const deleteBudget = useDeleteBudget()
-  const clearAllBudgets = useClearAllBudgets()
-  const aiSuggest = useAISuggestBudget()
+  const items = d?.budget.items ?? []
+  const budgeted = new Set(items.map((b) => b.categoryId))
+  const unbudgeted = (d?.byCategory ?? []).filter((c) => !budgeted.has(c.id))
+  const pace = d && isCurrent ? d.elapsedDays / d.daysInMonth : undefined
 
-  const [fabOpen, setFabOpen] = useState(false)
-  const [confirmClearOpen, setConfirmClearOpen] = useState(false)
+  const openEditor = (budget: BudgetStatus | null, categoryId = '') =>
+    setEditor({
+      open: true,
+      budget,
+      categoryId: budget?.categoryId ?? categoryId,
+      amount: budget ? String(budget.amount) : '',
+    })
+  const closeEditor = () => setEditor((e) => ({ ...e, open: false }))
 
-  const categorySpending: Record<string, number> = {}
-  for (const cat of dashboardData?.byCategory || []) {
-    categorySpending[cat.name] = cat.total
+  const saveBudget = (e?: React.FormEvent) => {
+    e?.preventDefault()
+    const amount = parseFloat(editor.amount)
+    if (!editor.categoryId || !(amount > 0)) return
+    upsert.mutate({ categoryId: editor.categoryId, amount, month }, { onSuccess: closeEditor })
   }
 
-  const existingBudgetCats = new Set(budgets.map((b) => b.categoryId))
+  const runSuggest = () =>
+    suggest.mutate(month, {
+      onSuccess: (res) => {
+        const picks: Record<string, { on: boolean; amount: string }> = {}
+        for (const s of res.suggestions) picks[s.categoryId] = { on: !budgeted.has(s.categoryId), amount: String(s.suggestedBudget) }
+        setReview({ open: true, picks })
+      },
+    })
 
-  const handleCloseModal = () => {
-    setModalOpen(false)
-    setFormCategory('')
-    setFormAmount('')
+  const applySuggestions = () => {
+    const chosen = Object.entries(review.picks)
+      .filter(([, p]) => p.on && parseFloat(p.amount) > 0)
+      .map(([categoryId, p]) => ({ categoryId, amount: parseFloat(p.amount) }))
+    if (!chosen.length) return
+    bulk.mutate({ month, items: chosen }, { onSuccess: () => setReview({ open: false, picks: {} }) })
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!formCategory || !formAmount) return
-    upsertBudget.mutate(
-      { categoryId: formCategory, amount: parseFloat(formAmount), month },
-      { onSuccess: handleCloseModal }
-    )
-  }
-
-  const handleAiSuggest = async () => {
-    try {
-      const { data } = await aiSuggest.mutateAsync(month)
-      const suggestions: { category: string; suggestedBudget: number }[] =
-        data.suggestions || []
-      if (suggestions.length === 0) {
-        toast.error('No suggestions returned. Add transactions first for AI to analyze.')
-        return
-      }
-      let created = 0
-      for (const s of suggestions) {
-        const cat = categories.find((c) => c.name === s.category)
-        if (cat && !existingBudgetCats.has(cat.id)) {
-          upsertBudget.mutate({ categoryId: cat.id, amount: s.suggestedBudget, month })
-          created++
-        }
-      }
-      qc.invalidateQueries({ queryKey: ['budgets'] })
-      toast.success(created > 0 ? `AI created ${created} budget(s)!` : 'AI suggestions applied — all categories already have budgets.')
-    } catch {
-      toast.error('Failed to generate budget suggestions. Check your GROQ_API_KEY.')
-    }
-  }
+  const selectedCount = Object.values(review.picks).filter((p) => p.on).length
+  const totalBudget = d?.budget.total ?? 0
+  const usage = totalBudget > 0 ? (d?.budget.spent ?? 0) / totalBudget : 0
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-extrabold text-white">Budget</h1>
-          <p className="text-base text-text-secondary mt-1">Manage your monthly spending limits</p>
-        </div>
-        <div className="flex gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            icon={<Sparkles className="h-4 w-4" />}
-            onClick={handleAiSuggest}
-            isLoading={aiSuggest.isPending}
-          >
-            AI Suggest
-          </Button>
-          <Button
-            variant="gradient"
-            size="sm"
-            icon={<Plus className="h-4 w-4" />}
-            onClick={() => setModalOpen(true)}
-          >
-            Set Budget
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Plan"
+        title="Budgets"
+        actions={
+          <>
+            <MonthStepper value={month} onChange={setMonth} />
+            <Button variant="soft" icon={<Sparkles className="h-4 w-4" />} isLoading={suggest.isPending} onClick={runSuggest}>
+              Suggest
+            </Button>
+            <Button icon={<Plus className="h-4 w-4" />} onClick={() => openEditor(null)}>
+              Add
+            </Button>
+          </>
+        }
+      />
 
-      <Card variant="dark" padding="sm">
-        <div className="flex items-center gap-3">
-          <label className="text-sm text-text-secondary font-medium">Month</label>
-          <Input
-            type="month"
-            value={month}
-            max={getCurrentMonth()}
-            onChange={(e) => setMonth(e.target.value)}
-            className="w-44"
-          />
-          <span className="text-sm font-medium text-primary-400">{formatMonth(month)}</span>
-        </div>
-      </Card>
-
+      {/* Overview */}
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} variant="dark" padding="md">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Skeleton variant="circular" className="w-10 h-10" />
-                  <Skeleton variant="text" className="w-24" />
-                </div>
-                <Skeleton variant="circular" className="w-8 h-8" />
+        <Skeleton className="h-44 w-full rounded-[var(--radius-2xl)]" />
+      ) : items.length > 0 && d ? (
+        <Card variant="glow" padding="lg" className="grain overflow-hidden">
+          <div className="grid gap-6 md:grid-cols-[1.4fr_1fr] md:items-center">
+            <div>
+              <p className="eyebrow">{formatMonth(month)} · {items.length} budgets</p>
+              <p className="display num mt-2 text-5xl text-text-primary sm:text-6xl">
+                {fmt(d.budget.spent)}
+                <span className="ml-2 align-middle font-sans text-base font-medium normal-case text-text-tertiary">of {fmt(totalBudget)}</span>
+              </p>
+              <ProgressBar value={usage} pace={pace} className="mt-5 h-3" />
+              <div className="mt-2 flex justify-between text-xs text-text-tertiary">
+                <span>{formatPercent(usage)} used</span>
+                {pace !== undefined && <span>Day {d.elapsedDays} of {d.daysInMonth}</span>}
               </div>
-              <Skeleton variant="rectangular" className="w-full h-2 mb-3" />
-              <Skeleton variant="text" className="w-32" />
-            </Card>
-          ))}
-        </div>
-      ) : budgets.length === 0 ? (
-        <Card className="p-12 text-center">
-          <div className="flex justify-center mb-4">
-            <div className="p-4 rounded-full bg-neutral-800">
-              <Target className="h-8 w-8 text-text-tertiary" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-[var(--radius-lg)] border border-line bg-bg/40 p-4">
+                <p className="text-xs text-text-tertiary">Remaining</p>
+                <p className={cn('num mt-1 text-xl font-bold', d.budget.remaining < 0 ? 'text-danger-400' : 'text-text-primary')}>{fmt(d.budget.remaining)}</p>
+              </div>
+              <div className="rounded-[var(--radius-lg)] border border-line bg-bg/40 p-4">
+                <p className="text-xs text-text-tertiary">{isCurrent ? 'Safe per day' : 'Result'}</p>
+                <p className="num mt-1 text-xl font-bold text-primary-400">
+                  {isCurrent ? fmt(d.budget.safePerDay) : d.budget.remaining >= 0 ? 'Under' : 'Over'}
+                </p>
+              </div>
+              {isCurrent && (
+                <div className="col-span-2 flex items-center gap-3 rounded-[var(--radius-lg)] border border-line bg-bg/40 p-4">
+                  <CalendarClock className="h-5 w-5 flex-shrink-0 text-text-tertiary" />
+                  <p className="text-xs leading-relaxed text-text-secondary">
+                    Budgeted categories are projected to finish at{' '}
+                    <strong className="num text-text-primary">{fmt(items.reduce((s, b) => s + Math.max(b.projected, b.spent), 0))}</strong>{' '}
+                    by month end.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
-          <p className="text-white font-semibold mb-1">No budgets set</p>
-          <p className="text-sm text-text-secondary mb-6">
-            Set a budget to track your spending limits per category.
-          </p>
-          <Button
-            variant="gradient"
-            size="sm"
-            icon={<Plus className="h-4 w-4" />}
-            onClick={() => setModalOpen(true)}
-          >
-            Set Budget
-          </Button>
+        </Card>
+      ) : null}
+
+      {/* Budget cards */}
+      {isLoading ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-40 w-full rounded-[var(--radius-2xl)]" />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <Card>
+          <EmptyState
+            icon={<Target className="h-7 w-7" />}
+            title={`No budgets for ${formatMonth(month)}`}
+            description="Let PennyWise suggest limits from your last 6 months, copy last month's plan, or set one yourself."
+            action={
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button icon={<Sparkles className="h-4 w-4" />} isLoading={suggest.isPending} onClick={runSuggest}>
+                  Suggest budgets
+                </Button>
+                <Button variant="outline" icon={<Copy className="h-4 w-4" />} isLoading={copy.isPending} onClick={() => copy.mutate(month)}>
+                  Copy last month
+                </Button>
+              </div>
+            }
+          />
         </Card>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-stagger">
-          {budgets.map((budget) => {
-            const spent = categorySpending[budget.category.name] || 0
-            const pct = budget.amount > 0 ? (spent / budget.amount) * 100 : 0
-            const isOver = pct >= 100
-            const isWarn = pct >= 80 && pct < 100
-
-            const statusColor = isOver ? '#EF4444' : isWarn ? '#F59E0B' : '#BFFF00'
-            const statusLabel = isOver ? 'Over budget' : isWarn ? 'Near limit' : 'On track'
-
+        <div className="animate-stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {items.map((b) => {
+            const st = STATUS[b.status]
             return (
-              <Card key={budget.id} variant="dark" padding="md">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">{budget.category.icon}</span>
-                    <span className="text-sm font-bold text-white">{budget.category.name}</span>
+              <Card key={b.id} interactive onClick={() => openEditor(b)} className="group">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <CategoryIcon icon={b.icon} color={b.color} />
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-text-primary">{b.name}</p>
+                      <p className="num text-xs text-text-tertiary">{fmt(b.amount)} / month</p>
+                    </div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    iconOnly
-                    icon={<X className="h-4 w-4" />}
-                    onClick={() => deleteBudget.mutate(budget.id)}
-                    className="!text-text-tertiary hover:!text-danger-500 hover:!bg-neutral-800"
-                  />
+                  <Badge label={st.label} color={st.color} size="sm" dot />
                 </div>
-
-                <div className="h-2 rounded-full bg-neutral-800 overflow-hidden mb-3">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      isOver ? 'bg-danger-500' : isWarn ? 'bg-warning-500' : 'bg-primary-500'
-                    }`}
-                    style={{ width: `${Math.min(pct, 100)}%` }}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-text-secondary tabular-nums">
-                    {formatCurrency(spent, currency)} / {formatCurrency(budget.amount, currency)}
+                <p className="num mt-5 text-2xl font-bold text-text-primary">
+                  {fmt(b.spent)}
+                  <span className="ml-1.5 text-xs font-medium text-text-tertiary">{formatPercent(b.pct)}</span>
+                </p>
+                <ProgressBar value={b.pct} color={b.status === 'warning' ? 'var(--color-warning-500)' : undefined} pace={pace} className="mt-3" />
+                <div className="mt-3 flex items-center justify-between text-xs">
+                  <span className={b.remaining < 0 ? 'text-danger-400' : 'text-text-secondary'}>
+                    {b.remaining < 0 ? `${fmt(-b.remaining)} over` : `${fmt(b.remaining)} left`}
                   </span>
-                  <Badge label={statusLabel} color={statusColor} variant="soft" size="sm" dot />
+                  {isCurrent && b.projected > b.spent && (
+                    <span className={cn('inline-flex items-center gap-1', b.projected > b.amount ? 'text-warning-500' : 'text-text-tertiary')}>
+                      <TrendingUp className="h-3 w-3" />
+                      ~{fmt(b.projected)}
+                    </span>
+                  )}
                 </div>
               </Card>
             )
@@ -212,130 +224,192 @@ export function BudgetPage() {
         </div>
       )}
 
+      {/* Spending without a budget */}
+      {unbudgeted.length > 0 && (
+        <Card>
+          <CardHeader title="Spending without a budget" subtitle="Add a limit to track pace and get alerts" />
+          <ul className="divide-y divide-line">
+            {unbudgeted.map((c) => (
+              <li key={c.id} className="flex items-center gap-3 py-3">
+                <CategoryIcon icon={c.icon} color={c.color} size="sm" />
+                <span className="flex-1 truncate text-sm text-text-primary">{c.name}</span>
+                <span className="num text-sm text-text-secondary">{fmt(c.total)}</span>
+                <Button size="sm" variant="outline" onClick={() => openEditor(null, c.id)}>
+                  Set
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {items.length > 0 && (
+        <div className="flex flex-wrap justify-end gap-2 border-t border-line pt-5">
+          <Button variant="ghost" size="sm" icon={<Copy className="h-4 w-4" />} isLoading={copy.isPending} onClick={() => copy.mutate(month)}>
+            Copy missing from last month
+          </Button>
+          <Button variant="ghost" size="sm" className="hover:!bg-danger-500/12 hover:!text-danger-400" icon={<Trash2 className="h-4 w-4" />} onClick={() => setConfirmClear(true)}>
+            Clear month
+          </Button>
+        </div>
+      )}
+
+      {/* Add / edit budget */}
       <Modal
-        isOpen={modalOpen}
-        onClose={handleCloseModal}
-        title="Set Budget"
-        size="md"
+        isOpen={editor.open}
+        onClose={closeEditor}
+        title={editor.budget ? `Edit ${editor.budget.name} budget` : 'New budget'}
+        description={formatMonth(month)}
         footer={
           <div className="flex gap-3">
-            <Button variant="secondary" onClick={handleCloseModal} className="flex-1">
+            {editor.budget && (
+              <Button
+                variant="ghost"
+                iconOnly
+                aria-label="Delete budget"
+                className="hover:!bg-danger-500/12 hover:!text-danger-400"
+                icon={<Trash2 className="h-4 w-4" />}
+                isLoading={remove.isPending}
+                onClick={() => remove.mutate(editor.budget!.id, { onSuccess: closeEditor })}
+              />
+            )}
+            <Button variant="secondary" className="flex-1" onClick={closeEditor}>
               Cancel
             </Button>
-            <Button
-              variant="gradient"
-              type="submit"
-              form="budget-form"
-              isLoading={upsertBudget.isPending}
-              className="flex-1"
-            >
+            <Button className="flex-1" isLoading={upsert.isPending} disabled={!editor.categoryId || !(parseFloat(editor.amount) > 0)} onClick={() => saveBudget()}>
               Save
             </Button>
           </div>
         }
       >
-        <form id="budget-form" onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-text-secondary">Category</label>
-            <div className="grid grid-cols-2 gap-2">
-              {categories
-                .filter((c) => !existingBudgetCats.has(c.id))
-                .map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => setFormCategory(c.id)}
-                    className={cn(
-                      'flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all',
-                      formCategory === c.id
-                        ? 'bg-primary-500/20 border-primary-500 text-white'
-                        : 'bg-neutral-800 border-[#262626] text-text-secondary hover:border-neutral-600'
-                    )}
-                  >
-                    <span className="text-base">{c.icon}</span>
-                    <span>{c.name}</span>
-                  </button>
-                ))}
+        <form onSubmit={saveBudget} className="space-y-5">
+          {!editor.budget && (
+            <div>
+              <p className="mb-2.5 text-[13px] font-medium text-text-secondary">Category</p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {expenseCats.map((c) => {
+                  const taken = budgeted.has(c.id)
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      disabled={taken}
+                      onClick={() => setEditor((e) => ({ ...e, categoryId: c.id }))}
+                      className={cn(
+                        'flex items-center gap-2 rounded-[var(--radius-md)] border px-3 py-2.5 text-left text-sm transition-all disabled:opacity-35',
+                        editor.categoryId === c.id ? 'border-primary-500 bg-primary-500/10 text-text-primary' : 'border-line bg-surface-2 text-text-secondary hover:border-line-strong'
+                      )}
+                    >
+                      <CategoryIcon icon={c.icon} color={c.color} size="xs" />
+                      <span className="truncate">{c.name}</span>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
-          </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-text-secondary">
-              Budget Amount ({currency})
+          )}
+          <div>
+            <label htmlFor="budget-amount" className="mb-2.5 block text-[13px] font-medium text-text-secondary">
+              Monthly limit
             </label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={formAmount}
-              onChange={(e) => setFormAmount(e.target.value)}
-              placeholder="0.00"
-              required
-              className="w-full h-12 px-4 rounded-xl border border-[#262626] bg-neutral-800 text-base text-white placeholder:text-text-tertiary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all tabular-nums"
-            />
+            <div className="relative">
+              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary">{currencySymbol(currency)}</span>
+              <input
+                id="budget-amount"
+                data-autofocus
+                type="number"
+                inputMode="decimal"
+                min="0"
+                value={editor.amount}
+                onChange={(e) => setEditor((s) => ({ ...s, amount: e.target.value }))}
+                placeholder="0"
+                className={cn(fieldClass, 'num pl-9 text-lg font-semibold')}
+              />
+            </div>
+            {(() => {
+              const hist = d?.byCategory.find((c) => c.id === editor.categoryId)
+              return hist ? <p className="mt-2 text-xs text-text-tertiary">Spent {fmt(hist.total)} so far in {formatMonth(month)}.</p> : null
+            })()}
           </div>
         </form>
       </Modal>
 
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
-        {fabOpen && (
-          <>
-            <button
-              onClick={() => { setFabOpen(false); setConfirmClearOpen(true) }}
-              className="flex items-center gap-3 pl-4 pr-3 py-2.5 bg-neutral-800 hover:bg-neutral-700 border border-[#333] rounded-xl shadow-lg transition-all group"
-            >
-              <span className="text-sm font-medium text-white">Clear All</span>
-              <div className="w-9 h-9 flex items-center justify-center rounded-full bg-red-500/20 text-red-400 group-hover:bg-red-500/30 transition-colors">
-                <Trash2 size={16} />
-              </div>
-            </button>
-            <button
-              onClick={() => { setFabOpen(false); setModalOpen(true) }}
-              className="flex items-center gap-3 pl-4 pr-3 py-2.5 bg-neutral-800 hover:bg-neutral-700 border border-[#333] rounded-xl shadow-lg transition-all group"
-            >
-              <span className="text-sm font-medium text-white">Add Budget</span>
-              <div className="w-9 h-9 flex items-center justify-center rounded-full bg-[#BFFF00]/10 text-[#BFFF00] group-hover:bg-[#BFFF00]/20 transition-colors">
-                <Plus size={16} />
-              </div>
-            </button>
-          </>
-        )}
-        <button
-          onClick={() => setFabOpen(!fabOpen)}
-          className="w-14 h-14 rounded-full bg-[#BFFF00] hover:bg-[#d9ff4d] text-neutral-950 shadow-lg shadow-[#BFFF00]/20 flex items-center justify-center transition-all active:scale-95"
-        >
-          {fabOpen ? <ChevronUp size={22} strokeWidth={2.5} /> : <Plus size={22} strokeWidth={2.5} />}
-        </button>
-      </div>
-
-      <Modal isOpen={confirmClearOpen} onClose={() => setConfirmClearOpen(false)}>
-        <div className="flex flex-col items-center text-center p-2">
-          <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
-            <Trash2 size={26} className="text-red-400" />
-          </div>
-          <h3 className="text-lg font-bold text-white mb-2">Clear All Budgets?</h3>
-          <p className="text-sm text-text-secondary mb-6 max-w-xs">
-            This will remove all budgets for{' '}
-            <span className="text-white font-medium">{formatMonth(month)}</span>. This action cannot be undone.
-          </p>
-          <div className="flex gap-3 w-full">
-            <button
-              onClick={() => setConfirmClearOpen(false)}
-              className="flex-1 h-11 px-4 rounded-xl border border-[#333] bg-neutral-800 text-sm font-semibold text-white hover:bg-neutral-700 transition-colors"
-            >
+      {/* Suggestion review */}
+      <Modal
+        isOpen={review.open}
+        onClose={() => setReview({ open: false, picks: {} })}
+        size="lg"
+        title={
+          <span className="flex items-center gap-2">
+            Suggested budgets <SourceTag source={suggest.data?.source} />
+          </span>
+        }
+        description="Based on a weighted average and median of your last 6 months. Adjust anything before applying."
+        footer={
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => setReview({ open: false, picks: {} })}>
               Cancel
-            </button>
-            <button
-              onClick={() => {
-                clearAllBudgets.mutate()
-                setConfirmClearOpen(false)
-              }}
-              className="flex-1 h-11 px-4 rounded-xl bg-red-500 hover:bg-red-600 text-sm font-semibold text-white transition-colors"
-            >
-              Clear All
-            </button>
+            </Button>
+            <Button className="flex-1" disabled={!selectedCount} isLoading={bulk.isPending} onClick={applySuggestions}>
+              Apply {selectedCount || ''}
+            </Button>
           </div>
-        </div>
+        }
+      >
+        {(suggest.data?.suggestions.length ?? 0) === 0 ? (
+          <EmptyState title="Not enough history yet" description="Log at least a week of spending and PennyWise will suggest budgets per category." />
+        ) : (
+          <ul className="space-y-2">
+            {suggest.data!.suggestions.map((s: BudgetSuggestion) => {
+              const pick = review.picks[s.categoryId] ?? { on: false, amount: String(s.suggestedBudget) }
+              const cat = expenseCats.find((c) => c.id === s.categoryId)
+              const exists = budgeted.has(s.categoryId)
+              return (
+                <li
+                  key={s.categoryId}
+                  className={cn('rounded-[var(--radius-lg)] border p-3.5 transition-colors', pick.on ? 'border-primary-500/50 bg-primary-500/5' : 'border-line bg-surface-2/50')}
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={pick.on}
+                      onChange={(e) => setReview((r) => ({ ...r, picks: { ...r.picks, [s.categoryId]: { ...pick, on: e.target.checked } } }))}
+                      className="h-4 w-4 flex-shrink-0 accent-[#3dd9a0]"
+                      aria-label={`Apply ${s.category}`}
+                    />
+                    {cat && <CategoryIcon icon={cat.icon} color={cat.color} size="sm" />}
+                    <span className="flex-1 truncate font-semibold text-text-primary">
+                      {s.category}
+                      {exists && <span className="ml-2 text-xs font-normal text-text-tertiary">(replaces current)</span>}
+                    </span>
+                    <div className="relative w-32">
+                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-text-tertiary">{currencySymbol(currency)}</span>
+                      <input
+                        type="number"
+                        value={pick.amount}
+                        onChange={(e) => setReview((r) => ({ ...r, picks: { ...r.picks, [s.categoryId]: { on: true, amount: e.target.value } } }))}
+                        className={cn(fieldClass, 'num h-10 pl-7 text-right text-sm font-semibold')}
+                        aria-label={`${s.category} amount`}
+                      />
+                    </div>
+                  </div>
+                  <p className="mt-2 pl-7 text-xs leading-relaxed text-text-secondary">{s.reason}</p>
+                </li>
+              )
+            })}
+          </ul>
+        )}
       </Modal>
+
+      <ConfirmDialog
+        isOpen={confirmClear}
+        onClose={() => setConfirmClear(false)}
+        onConfirm={() => clear.mutate(month, { onSuccess: () => setConfirmClear(false) })}
+        isLoading={clear.isPending}
+        title={`Clear budgets for ${formatMonth(month)}?`}
+        description="All budgets for this month are removed. Your transactions are not affected."
+        confirmLabel="Clear budgets"
+      />
     </div>
   )
 }

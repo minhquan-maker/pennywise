@@ -9,12 +9,16 @@ import { budgetRouter } from './routes/budget.routes.js'
 import { analyticsRouter } from './routes/analytics.routes.js'
 import { aiRouter } from './routes/ai.routes.js'
 import { exportRouter } from './routes/export.routes.js'
+import { contactRouter } from './routes/contact.routes.js'
+import { isAiConfigured } from './services/ai.service.js'
 
 if (!process.env.JWT_SECRET) {
   throw new Error('JWT_SECRET must be set')
 }
 
 const app = express()
+app.set('trust proxy', 1)
+app.disable('x-powered-by')
 const PORT = process.env.PORT || 3000
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:4173')
@@ -22,30 +26,52 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,ht
   .map((origin) => origin.trim())
   .filter(Boolean)
 
+// Entries may use a "*" wildcard, e.g. https://*.vercel.app for preview deployments
+const originMatchers = allowedOrigins.map((o) =>
+  o.includes('*') ? new RegExp(`^${o.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[a-z0-9-]+')}$`, 'i') : o
+)
+
 app.use(cors({
-  origin: allowedOrigins,
+  origin: (origin, cb) => {
+    // Same-origin and non-browser requests have no Origin header
+    if (!origin) return cb(null, true)
+    cb(null, originMatchers.some((m) => (typeof m === 'string' ? m === origin : m.test(origin))))
+  },
   credentials: true,
 }))
 
-app.use(express.json())
+app.use(express.json({ limit: '100kb' }))
 
-// Health check
-app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() })
+// All endpoints live on one router. It is mounted at /api (local dev, Docker, Vercel when the
+// prefix is forwarded) and at / (in case the platform strips the /api prefix before routing).
+const api = express.Router()
+
+api.get('/health', (_req, res) => {
+  res.json({ status: 'ok', ai: isAiConfigured(), timestamp: new Date().toISOString() })
+})
+api.use('/auth', authRouter)
+api.use('/categories', categoryRouter)
+api.use('/transactions', transactionRouter)
+api.use('/budgets', budgetRouter)
+api.use('/analytics', analyticsRouter)
+api.use('/ai', aiRouter)
+api.use('/export', exportRouter)
+api.use('/contact', contactRouter)
+api.use((_req, res) => {
+  res.status(404).json({ error: 'Not found' })
 })
 
-// Routes
-app.use('/api/auth', authRouter)
-app.use('/api/categories', categoryRouter)
-app.use('/api/transactions', transactionRouter)
-app.use('/api/budgets', budgetRouter)
-app.use('/api/analytics', analyticsRouter)
-app.use('/api/ai', aiRouter)
-app.use('/api/export', exportRouter)
+app.use('/api', api)
+app.use(api)
 
 // Error handler
 app.use(errorHandler)
 
-app.listen(PORT, () => {
-  console.log(`PennyWise API running on http://localhost:${PORT}`)
-})
+// Vercel imports the default export as a serverless handler; everywhere else we listen on a port
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`PennyWise API running on http://localhost:${PORT}`)
+  })
+}
+
+export default app

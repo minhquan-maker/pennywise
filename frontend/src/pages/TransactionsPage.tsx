@@ -1,359 +1,257 @@
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Trash2, Plus, X } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Download, Plus, ReceiptText, Search, Trash2, X } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { Modal } from '@/components/ui/Modal'
-import { TransactionModal } from '@/components/ui/TransactionModal'
-import { formatCurrency, formatDate, getCurrentMonth, formatMonth, cn } from '@/lib/utils'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { MonthStepper } from '@/components/ui/MonthStepper'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { CategoryIcon } from '@/components/ui/CategoryIcon'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { fieldClass } from '@/components/ui/Input'
+import { cn, formatCurrency, formatDayHeading, formatMonth, getCurrentMonth } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
-import { transactionService, clearService } from '@/lib/services'
-import { useCategories } from '@/hooks/useQueries'
-import type { Transaction } from '@/types'
+import { useUiStore } from '@/stores/ui.store'
+import { useCategories, useClearTransactions, useDeleteTransaction, useExportCSV, useTransactions } from '@/hooks/useQueries'
+import type { Transaction, TxType } from '@/types'
+
+function useDebounced<T>(value: T, ms = 300) {
+  const [v, setV] = useState(value)
+  useEffect(() => {
+    const t = setTimeout(() => setV(value), ms)
+    return () => clearTimeout(t)
+  }, [value, ms])
+  return v
+}
 
 export function TransactionsPage() {
-  const user = useAuthStore((s) => s.user)
-  const currency = user?.currency || 'USD'
+  const currency = useAuthStore((s) => s.user?.currency) || 'USD'
+  const { openAdd, openEdit } = useUiStore()
   const [month, setMonth] = useState(getCurrentMonth())
+  const [type, setType] = useState<'all' | TxType>('all')
   const [categoryFilter, setCategoryFilter] = useState('')
-  const [search, setSearch] = useState('')
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editTxn, setEditTxn] = useState<Transaction | null>(null)
-  const [fabOpen, setFabOpen] = useState(false)
-  const [confirmClearOpen, setConfirmClearOpen] = useState(false)
-
-  const qc = useQueryClient()
-
-  const { data: transactions, isLoading } = useQuery({
-    queryKey: ['transactions', { month, category: categoryFilter, search }],
-    queryFn: () => transactionService.getAll({ month, category: categoryFilter, search }).then((r) => r.data!.transactions),
-  })
+  const [searchInput, setSearchInput] = useState('')
+  const [confirmClear, setConfirmClear] = useState(false)
+  const search = useDebounced(searchInput.trim())
 
   const { data: categories = [] } = useCategories()
-
-  const createTxn = useMutation({
-    mutationFn: (data: { categoryId: string; amount: number; note?: string; date: string }) =>
-      transactionService.create(data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['transactions'] })
-      qc.invalidateQueries({ queryKey: ['dashboard'] })
-      qc.invalidateQueries({ queryKey: ['budgets'] })
-      setModalOpen(false)
-      setEditTxn(null)
-    },
+  const { data: transactions = [], isLoading, isFetching } = useTransactions({
+    month,
+    type: type === 'all' ? undefined : type,
+    category: categoryFilter || undefined,
+    search: search || undefined,
   })
+  const deleteTxn = useDeleteTransaction()
+  const clearMonth = useClearTransactions()
+  const exportCsv = useExportCSV()
 
-  const updateTxn = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof transactionService.update>[1] }) =>
-      transactionService.update(id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['transactions'] })
-      qc.invalidateQueries({ queryKey: ['dashboard'] })
-      qc.invalidateQueries({ queryKey: ['budgets'] })
-      setModalOpen(false)
-      setEditTxn(null)
-    },
-  })
+  const fmt = (n: number) => formatCurrency(n, currency)
+  const totals = useMemo(() => {
+    const income = transactions.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+    const expense = transactions.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+    return { income, expense, net: income - expense }
+  }, [transactions])
 
-  const deleteTxn = useMutation({
-    mutationFn: (id: string) => transactionService.delete(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['transactions'] })
-      qc.invalidateQueries({ queryKey: ['dashboard'] })
-      qc.invalidateQueries({ queryKey: ['budgets'] })
-    },
-  })
-
-  const clearAll = useMutation({
-    mutationFn: () => clearService.clearAllTransactions(),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['transactions'] })
-      qc.invalidateQueries({ queryKey: ['dashboard'] })
-      qc.invalidateQueries({ queryKey: ['budgets'] })
-      setFabOpen(false)
-      setConfirmClearOpen(false)
-    },
-  })
-
-  const handleModalSubmit = (data: { categoryId: string; amount: number; note?: string; date: string }) => {
-    if (editTxn) {
-      updateTxn.mutate({ id: editTxn.id, data })
-    } else {
-      createTxn.mutate(data)
+  const groups = useMemo(() => {
+    const map = new Map<string, Transaction[]>()
+    for (const t of transactions) {
+      const day = t.date.slice(0, 10)
+      map.set(day, [...(map.get(day) ?? []), t])
     }
-  }
+    return [...map.entries()]
+  }, [transactions])
 
-  const openAdd = () => {
-    setEditTxn(null)
-    setModalOpen(true)
-  }
-
-  const openEdit = (txn: Transaction) => {
-    setEditTxn(txn)
-    setModalOpen(true)
-  }
-
-  const closeModal = () => {
-    setModalOpen(false)
-    setEditTxn(null)
-  }
-
-  const hasActiveFilters = categoryFilter || search
-
-  const handleClearFilters = () => {
+  const visibleCategories = categories.filter((c) => type === 'all' || c.type === type)
+  const hasFilters = !!(categoryFilter || searchInput || type !== 'all')
+  const resetFilters = () => {
     setCategoryFilter('')
-    setSearch('')
+    setSearchInput('')
+    setType('all')
   }
-
-  const isMutating = createTxn.isPending || updateTxn.isPending
 
   return (
     <div className="space-y-6">
-      {/* Page header */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-extrabold text-white">Transactions</h1>
-          <p className="text-base text-text-secondary mt-1">{formatMonth(month)} · {user?.name}</p>
-        </div>
-        {transactions && (
-          <Badge
-            label={`${transactions.length} transaction${transactions.length !== 1 ? 's' : ''}`}
-            color="#BFFF00"
-            variant="soft"
-            size="sm"
-          />
-        )}
-      </div>
-
-      {/* Filter bar */}
-      <Card variant="dark" padding="sm">
-        <div className="flex items-center gap-3">
-          {/* Search — dominant, clean */}
-          <div className="flex-1">
-            <input
-              type="text"
-              placeholder="Search transactions..."
-              className="w-full h-12 pl-4 pr-4 rounded-xl border border-[#262626] bg-neutral-800 text-sm text-white placeholder:text-text-tertiary focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-          </div>
-          {/* Month — compact */}
-          <input
-            type="month"
-            max={getCurrentMonth()}
-            value={month}
-            onChange={e => setMonth(e.target.value)}
-            className="h-12 px-4 rounded-xl border border-[#262626] bg-neutral-800 text-sm text-white focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
-          />
-          {/* Category — clean dropdown, no icon */}
-          <select
-            value={categoryFilter}
-            onChange={e => setCategoryFilter(e.target.value)}
-            className="h-12 px-4 rounded-xl border border-[#262626] bg-neutral-800 text-sm text-white focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all appearance-none pr-8"
-            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a3a3a3' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
-          >
-            <option value="">All Categories</option>
-            {categories.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-          {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={handleClearFilters}>
-              Clear
+      <PageHeader
+        eyebrow="Ledger"
+        title="Transactions"
+        actions={
+          <>
+            <MonthStepper value={month} onChange={setMonth} />
+            <Button className="hidden lg:inline-flex" icon={<Plus className="h-4 w-4" />} onClick={() => openAdd()}>
+              Add
             </Button>
-          )}
-        </div>
-      </Card>
-
-      {/* Transaction list */}
-      {isLoading ? (
-        <Card variant="default" padding="none">
-          <div>
-            {[0, 1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="flex items-center gap-4 px-5 py-4 border-b border-surface-border last:border-0"
-              >
-                <Skeleton variant="circular" className="w-10 h-10 flex-shrink-0" />
-                <div className="flex-1 space-y-2 min-w-0">
-                  <Skeleton variant="text" className="w-48" />
-                  <Skeleton variant="text" className="w-32" />
-                </div>
-                <Skeleton variant="text" className="w-20 flex-shrink-0" />
-              </div>
-            ))}
-          </div>
-        </Card>
-      ) : transactions?.length === 0 ? (
-        <Card variant="dark" padding="lg">
-          <div className="text-center py-16">
-            <div className="flex justify-center mb-4">
-              <div className="p-4 rounded-full bg-neutral-800">
-                <svg
-                  width="40"
-                  height="40"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-text-tertiary"
-                >
-                  <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" />
-                  <path d="M8 10h8M8 14h5" />
-                </svg>
-              </div>
-            </div>
-            <p className="text-white font-semibold mb-1">No transactions yet</p>
-            <p className="text-sm text-text-secondary mb-1">
-              Start tracking your expenses by adding your first transaction.
-            </p>
-            <p className="text-xs text-text-tertiary">
-              Tap the + button below to get started.
-            </p>
-          </div>
-        </Card>
-      ) : (
-        <Card variant="dark" padding="none">
-          {transactions?.map((txn) => {
-            const catColor = txn.category?.color || '#BFFF00'
-            return (
-              <div
-                key={txn.id}
-                className="flex items-center gap-4 px-5 py-4 hover:bg-neutral-800 transition-colors border-b border-[#262626] last:border-0 group"
-              >
-                {/* Category dot */}
-                <span
-                  className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center"
-                  style={{ backgroundColor: `${catColor}1a` }}
-                >
-                  <span
-                    className="w-3 h-3 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: catColor }}
-                  />
-                </span>
-                {/* Note + date */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-white truncate">
-                    {txn.note || txn.category?.name}
-                  </p>
-                  <p className="text-xs text-text-tertiary">
-                    {formatDate(txn.date)} · {txn.category?.name}
-                  </p>
-                </div>
-                {/* Amount */}
-                <p className="text-sm font-bold tabular-nums text-white flex-shrink-0">
-                  {formatCurrency(txn.amount, currency)}
-                </p>
-                {/* Actions (visible on hover) */}
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    iconOnly
-                    icon={<Pencil className="h-3.5 w-3.5" />}
-                    onClick={() => openEdit(txn)}
-                    className="!w-8 !h-8 !p-0"
-                  />
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    iconOnly
-                    icon={<Trash2 className="h-3.5 w-3.5" />}
-                    onClick={() => deleteTxn.mutate(txn.id)}
-                    className="!w-8 !h-8 !p-0 text-danger-500 hover:text-danger-600 hover:bg-danger-50"
-                  />
-                </div>
-              </div>
-            )
-          })}
-        </Card>
-      )}
-
-      {/* FAB Menu */}
-      {fabOpen && (
-        <div className="fixed bottom-24 right-6 z-40 flex flex-col gap-2 lg:bottom-26 lg:right-8">
-          <button
-            onClick={() => { setFabOpen(false); setConfirmClearOpen(true) }}
-            className="flex items-center gap-3 pl-4 pr-5 py-3 rounded-2xl bg-neutral-800 border border-[#262626] text-white shadow-xl hover:bg-neutral-700 transition-all"
-          >
-            <span className="text-sm font-medium">Clear All</span>
-            <span className="w-8 h-8 rounded-full bg-red-900/50 flex items-center justify-center">
-              <Trash2 className="w-4 h-4 text-red-400" />
-            </span>
-          </button>
-          <button
-            onClick={() => {
-              setFabOpen(false)
-              openAdd()
-            }}
-            className="flex items-center gap-3 pl-4 pr-5 py-3 rounded-2xl bg-neutral-800 border border-[#262626] text-white shadow-xl hover:bg-neutral-700 transition-all"
-          >
-            <span className="text-sm font-medium">Add Transaction</span>
-            <span className="w-8 h-8 rounded-full bg-primary-900/50 flex items-center justify-center">
-              <Plus className="w-4 h-4 text-primary-400" />
-            </span>
-          </button>
-        </div>
-      )}
-
-      {/* FAB Toggle */}
-      <button
-        onClick={() => setFabOpen((prev) => !prev)}
-        aria-label="Toggle menu"
-        className={cn(
-          'fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 lg:bottom-8 lg:right-8',
-          fabOpen
-            ? 'bg-neutral-800 text-white shadow-xl'
-            : 'bg-primary-500 text-[#0A0A0A] shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 hover:scale-105 active:scale-95'
-        )}
-      >
-        {fabOpen ? <X className="h-6 w-6" strokeWidth={2.5} /> : <Plus className="h-6 w-6" strokeWidth={2.5} />}
-      </button>
-
-      {/* Transaction Modal */}
-      <TransactionModal
-        isOpen={modalOpen}
-        onClose={closeModal}
-        onSubmit={handleModalSubmit}
-        initialData={editTxn}
-        categories={categories}
-        isLoading={isMutating}
-        currency={currency}
+          </>
+        }
       />
 
-      {/* Clear All Confirmation Modal */}
-      <Modal isOpen={confirmClearOpen} onClose={() => setConfirmClearOpen(false)}>
-        <div className="flex flex-col items-center text-center p-2">
-          <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
-            <Trash2 size={26} className="text-red-400" />
+      {/* Summary */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+        {[
+          { label: 'Income', value: fmt(totals.income), className: 'text-primary-400' },
+          { label: 'Spending', value: fmt(totals.expense), className: 'text-text-primary' },
+          { label: 'Net', value: formatCurrency(totals.net, currency, { sign: true }), className: totals.net < 0 ? 'text-danger-400' : 'text-text-primary' },
+        ].map((s) => (
+          <div key={s.label} className="rounded-[var(--radius-xl)] border border-line bg-surface px-3 py-3 sm:px-5 sm:py-4">
+            <p className="text-[11px] font-medium text-text-tertiary sm:text-xs">{s.label}</p>
+            <p className={cn('num mt-1 truncate text-[13px] font-bold sm:text-2xl', s.className)}>{s.value}</p>
           </div>
-          <h3 className="text-lg font-bold text-white mb-2">Clear All Transactions?</h3>
-          <p className="text-sm text-text-secondary mb-6 max-w-xs">
-            This will delete all transactions for{' '}
-            <span className="text-white font-medium">{formatMonth(month)}</span>. This action cannot be undone.
-          </p>
-          <div className="flex gap-3 w-full">
-            <button
-              onClick={() => setConfirmClearOpen(false)}
-              className="flex-1 h-11 px-4 rounded-xl border border-[#333] bg-neutral-800 text-sm font-semibold text-white hover:bg-neutral-700 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => clearAll.mutate()}
-              disabled={clearAll.isPending}
-              className="flex-1 h-11 px-4 rounded-xl bg-red-500 hover:bg-red-600 text-sm font-semibold text-white transition-colors disabled:opacity-50"
-            >
-              {clearAll.isPending ? 'Clearing...' : 'Clear All'}
-            </button>
-          </div>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
+          <input
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search notes or categories…"
+            className={cn(fieldClass, 'rounded-full pl-11')}
+          />
         </div>
-      </Modal>
+        <div className="flex flex-wrap gap-2">
+          <SegmentedControl
+            value={type}
+            onChange={(v) => {
+              setType(v)
+              setCategoryFilter('')
+            }}
+            options={[
+              { value: 'all', label: 'All' },
+              { value: 'expense', label: 'Spending' },
+              { value: 'income', label: 'Income' },
+            ]}
+          />
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            aria-label="Filter by category"
+            className={cn(fieldClass, 'h-11 w-auto min-w-[9rem] flex-1 cursor-pointer rounded-full pr-8 text-sm lg:flex-none')}
+          >
+            <option value="">All categories</option>
+            {visibleCategories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          {hasFilters && (
+            <Button variant="ghost" size="md" iconOnly icon={<X className="h-4 w-4" />} onClick={resetFilters} aria-label="Clear filters" />
+          )}
+        </div>
+      </div>
+
+      {/* List */}
+      {isLoading ? (
+        <Card padding="none">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 border-b border-line px-5 py-4 last:border-0">
+              <Skeleton variant="circular" className="h-10 w-10" />
+              <div className="flex-1 space-y-2">
+                <Skeleton variant="text" className="w-40" />
+                <Skeleton variant="text" className="w-24" />
+              </div>
+              <Skeleton variant="text" className="w-16" />
+            </div>
+          ))}
+        </Card>
+      ) : groups.length === 0 ? (
+        <Card>
+          <EmptyState
+            icon={<ReceiptText className="h-7 w-7" />}
+            title={hasFilters ? 'No matches' : `No transactions in ${formatMonth(month)}`}
+            description={hasFilters ? 'Try another search or clear the filters.' : 'Log an expense or income to start building your history.'}
+            action={
+              hasFilters ? (
+                <Button variant="outline" onClick={resetFilters}>
+                  Clear filters
+                </Button>
+              ) : (
+                <Button icon={<Plus className="h-4 w-4" />} onClick={() => openAdd()}>
+                  Add transaction
+                </Button>
+              )
+            }
+          />
+        </Card>
+      ) : (
+        <div className={cn('space-y-5 transition-opacity', isFetching && 'opacity-70')}>
+          {groups.map(([day, items]) => {
+            const dayNet = items.reduce((s, t) => s + (t.type === 'income' ? t.amount : -t.amount), 0)
+            return (
+              <section key={day}>
+                <div className="mb-2 flex items-center justify-between px-1">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">{formatDayHeading(day)}</h3>
+                  <span className={cn('num text-xs font-semibold', dayNet >= 0 ? 'text-primary-400' : 'text-text-tertiary')}>
+                    {formatCurrency(dayNet, currency, { sign: true })}
+                  </span>
+                </div>
+                <Card padding="none" className="overflow-hidden">
+                  {items.map((t) => (
+                    <div key={t.id} className="group flex items-center border-b border-line last:border-0">
+                      <button
+                        onClick={() => openEdit(t)}
+                        className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-surface-2 sm:px-5"
+                      >
+                        <CategoryIcon icon={t.category.icon} color={t.category.color} />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-text-primary">{t.note || t.category.name}</p>
+                          <p className="truncate text-xs text-text-tertiary">{t.category.name}</p>
+                        </div>
+                        <span className={cn('num text-[15px] font-bold', t.type === 'income' ? 'text-primary-400' : 'text-text-primary')}>
+                          {t.type === 'income' ? '+' : '−'}
+                          {fmt(t.amount)}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => deleteTxn.mutate(t)}
+                        aria-label={`Delete ${t.note || t.category.name}`}
+                        className="mr-2 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-text-tertiary transition-all hover:bg-danger-500/12 hover:text-danger-400 lg:opacity-0 lg:group-hover:opacity-100 lg:focus:opacity-100"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </Card>
+              </section>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Month tools */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5">
+        <p className="text-xs text-text-tertiary">
+          {transactions.length} transaction{transactions.length === 1 ? '' : 's'}
+          {hasFilters ? ' match your filters' : ` in ${formatMonth(month)}`}
+        </p>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" icon={<Download className="h-4 w-4" />} isLoading={exportCsv.isPending} onClick={() => exportCsv.mutate(month)}>
+            Export CSV
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="hover:!bg-danger-500/12 hover:!text-danger-400"
+            icon={<Trash2 className="h-4 w-4" />}
+            onClick={() => setConfirmClear(true)}
+          >
+            Clear month
+          </Button>
+        </div>
+      </div>
+
+      <ConfirmDialog
+        isOpen={confirmClear}
+        onClose={() => setConfirmClear(false)}
+        onConfirm={() => clearMonth.mutate(month, { onSuccess: () => setConfirmClear(false) })}
+        isLoading={clearMonth.isPending}
+        title={`Clear ${formatMonth(month)}?`}
+        description={<>This permanently deletes every transaction in <strong className="text-text-primary">{formatMonth(month)}</strong>. Other months are not affected.</>}
+        confirmLabel="Delete month"
+      />
     </div>
   )
 }

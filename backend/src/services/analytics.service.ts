@@ -1,104 +1,334 @@
 import { prisma } from '../lib/prisma.js'
+import {
+  addMonths,
+  currentMonth,
+  dayKey,
+  daysInMonth,
+  elapsedDays,
+  monthKey,
+  monthRange,
+  monthSeries,
+} from '../lib/dates.js'
+import {
+  forecastNext,
+  formatMoney,
+  generateInsights,
+  healthScore,
+  mean,
+  projectMonthEnd,
+  safeToSpendPerDay,
+  suggestBudgets,
+  trimLeadingZeros,
+  type CategoryHistory,
+} from './finance.engine.js'
+
+const HISTORY_MONTHS = 6
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+async function getCurrency(userId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { currency: true } })
+  return user?.currency || 'USD'
+}
 
 export const analyticsService = {
-  async getDashboard(userId: string, month?: string) {
-    const now = new Date()
-    const targetYear = month ? parseInt(month.split('-')[0]) : now.getFullYear()
-    const targetMonth = month ? parseInt(month.split('-')[1]) - 1 : now.getMonth()
+  async getCurrency(userId: string) {
+    return getCurrency(userId)
+  },
 
-    const startOfMonth = new Date(targetYear, targetMonth, 1)
-    const endOfMonth = new Date(targetYear, targetMonth + 1, 1)
+  async getDashboard(userId: string, month: string = currentMonth()) {
+    const prevMonth = addMonths(month, -1)
+    const historyStart = monthRange(addMonths(month, -HISTORY_MONTHS)).start
+    const { start, end } = monthRange(month)
 
-    // Fix January boundary: prevMonth could be 11 (Dec) of previous year
-    const prevMonth = targetMonth === 0 ? 11 : targetMonth - 1
-    const prevYear = targetMonth === 0 ? targetYear - 1 : targetYear
-    const startOfPrevMonth = new Date(prevYear, prevMonth, 1)
-    const endOfPrevMonth = new Date(prevYear, prevMonth + 1, 1)
+    const [allTxns, budgets, currency] = await Promise.all([
+      prisma.transaction.findMany({
+        where: { userId, date: { gte: historyStart, lt: end } },
+        include: { category: true },
+      }),
+      prisma.budget.findMany({ where: { userId, month }, include: { category: true } }),
+      getCurrency(userId),
+    ])
+    const fmt = (n: number) => formatMoney(n, currency)
 
-    // Fetch both months in one query
-    const allTxns = await prisma.transaction.findMany({
-      where: {
-        userId,
-        date: {
-          gte: startOfPrevMonth,
-          lt: endOfMonth,
-        },
-      },
-      include: { category: true },
+    const thisMonth = allTxns.filter((t) => t.date >= start && t.date < end)
+    const prev = allTxns.filter((t) => monthKey(t.date) === prevMonth)
+    const sum = (txns: typeof allTxns, type: string) =>
+      txns.filter((t) => t.type === type).reduce((s, t) => s + t.amount, 0)
+
+    const expense = sum(thisMonth, 'expense')
+    const income = sum(thisMonth, 'income')
+    const prevExpense = sum(prev, 'expense')
+    const prevIncome = sum(prev, 'income')
+
+    // Expense history of the complete months before `month` (for averages and projections)
+    const priorMonths = monthSeries(prevMonth, HISTORY_MONTHS)
+    const monthlyExpense = priorMonths.map((m) =>
+      allTxns.filter((t) => t.type === 'expense' && monthKey(t.date) === m).reduce((s, t) => s + t.amount, 0)
+    )
+    const history = trimLeadingZeros(monthlyExpense).slice(-3)
+    const historicalAvg = history.length ? mean(history) : null
+
+    // Category breakdowns
+    type CatRow = { id: string; name: string; icon: string; color: string; total: number; prevTotal: number; count: number }
+    const groupByCategory = (type: string) => {
+      const map = new Map<string, CatRow>()
+      for (const t of thisMonth.filter((t) => t.type === type)) {
+        const row = map.get(t.categoryId) ?? {
+          id: t.categoryId,
+          name: t.category.name,
+          icon: t.category.icon,
+          color: t.category.color,
+          total: 0,
+          prevTotal: 0,
+          count: 0,
+        }
+        row.total += t.amount
+        row.count += 1
+        map.set(t.categoryId, row)
+      }
+      // Running month: compare with the same days of last month so deltas are like-for-like
+      const sameDays = month === currentMonth() ? elapsedDays(month) : 31
+      for (const t of prev.filter((t) => t.type === type && t.date.getUTCDate() <= sameDays)) {
+        const row = map.get(t.categoryId)
+        if (row) row.prevTotal += t.amount
+      }
+      const total = type === 'expense' ? expense : income
+      return [...map.values()]
+        .map((r) => ({ ...r, share: total > 0 ? r.total / total : 0 }))
+        .sort((a, b) => b.total - a.total)
+    }
+    const byCategory = groupByCategory('expense')
+    const incomeByCategory = groupByCategory('income')
+
+    // Daily series for the month
+    const totalDays = daysInMonth(month)
+    const elapsed = elapsedDays(month)
+    let cumulative = 0
+    const daily = Array.from({ length: totalDays }, (_, i) => {
+      const date = dayKey(new Date(start.getTime() + i * 86_400_000))
+      const dayTx = thisMonth.filter((t) => dayKey(t.date) === date)
+      const dayExpense = dayTx.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+      const dayIncome = dayTx.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+      cumulative += dayExpense
+      return { date, expense: dayExpense, income: dayIncome, cumulative: i < Math.max(elapsed, 1) ? cumulative : null }
     })
 
-    const thisMonthTxns = allTxns.filter(
-      (t) => t.date >= startOfMonth && t.date < endOfMonth
-    )
-    const prevMonthTxns = allTxns.filter(
-      (t) => t.date >= startOfPrevMonth && t.date < endOfPrevMonth
-    )
+    // Last 7 days ending today (current month) or at the month's last day (past month)
+    const anchor = month === currentMonth() ? new Date() : new Date(end.getTime() - 86_400_000)
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth(), anchor.getUTCDate() - (6 - i)))
+      const date = dayKey(d)
+      const total = allTxns
+        .filter((t) => t.type === 'expense' && dayKey(t.date) === date)
+        .reduce((s, t) => s + t.amount, 0)
+      return { date, total }
+    })
 
-    const thisMonthTotal = thisMonthTxns.reduce((sum, t) => sum + t.amount, 0)
-    const prevMonthTotal = prevMonthTxns.reduce((sum, t) => sum + t.amount, 0)
+    // Weekend share of this month's spending
+    const weekendSpend = thisMonth
+      .filter((t) => t.type === 'expense' && [0, 6].includes(t.date.getUTCDay()))
+      .reduce((s, t) => s + t.amount, 0)
+    const weekendShare = expense > 0 ? weekendSpend / expense : null
 
-    // By category
-    const byCategory: Record<string, { name: string; icon: string; color: string; total: number }> = {}
-    for (const txn of thisMonthTxns) {
-      const cat = txn.category
-      if (!byCategory[cat.id]) {
-        byCategory[cat.id] = { name: cat.name, icon: cat.icon, color: cat.color, total: 0 }
-      }
-      byCategory[cat.id].total += txn.amount
-    }
+    // Budgets — matched by category id
+    const spentByCat = new Map(byCategory.map((c) => [c.id, c.total]))
+    const budgetRows = budgets
+      .map((b) => {
+        const spent = spentByCat.get(b.categoryId) ?? 0
+        const catHistory = priorMonths.slice(-3).map((m) =>
+          allTxns
+            .filter((t) => t.categoryId === b.categoryId && t.type === 'expense' && monthKey(t.date) === m)
+            .reduce((s, t) => s + t.amount, 0)
+        )
+        const catHist = trimLeadingZeros(catHistory)
+        const projected = projectMonthEnd(spent, elapsed, totalDays, catHist.length ? mean(catHist) : null)
+        const pct = b.amount > 0 ? spent / b.amount : 0
+        // "At risk" needs evidence from this month: already ahead of an even pace AND projected over.
+        // History alone (e.g. nothing spent yet) never flags a budget.
+        const aheadOfPace = pct > elapsed / totalDays
+        const atRisk = aheadOfPace && projected > b.amount
+        const status: 'ok' | 'warning' | 'over' = spent > b.amount ? 'over' : pct >= 0.8 || atRisk ? 'warning' : 'ok'
+        return {
+          id: b.id,
+          categoryId: b.categoryId,
+          name: b.category.name,
+          icon: b.category.icon,
+          color: b.category.color,
+          amount: b.amount,
+          spent,
+          remaining: b.amount - spent,
+          projected,
+          pct,
+          status,
+          atRisk,
+        }
+      })
+      .sort((a, b) => b.pct - a.pct)
+    const totalBudget = budgets.reduce((s, b) => s + b.amount, 0)
+    const budgetedSpent = budgetRows.reduce((s, b) => s + b.spent, 0)
+    const daysLeft = totalDays - elapsed
 
-    // Last 7 days
-    const last7Days: { date: string; total: number }[] = []
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date()
-      d.setDate(d.getDate() - i)
-      const dateStr = d.toISOString().split('T')[0]
-      const dayTotal = thisMonthTxns
-        .filter((t) => t.date.toISOString().split('T')[0] === dateStr)
-        .reduce((sum, t) => sum + t.amount, 0)
-      last7Days.push({ date: dateStr, total: dayTotal })
-    }
+    const projectedExpense = projectMonthEnd(expense, elapsed, totalDays, historicalAvg)
+    const isCurrent = month === currentMonth()
+    // For the running month compare against the same days of last month, not the full month
+    const prevToDate = isCurrent
+      ? prev.filter((t) => t.type === 'expense' && t.date.getUTCDate() <= elapsed).reduce((s, t) => s + t.amount, 0)
+      : prevExpense
+    const changePercent = prevToDate > 0 ? ((expense - prevToDate) / prevToDate) * 100 : 0
+    const savingsRate = income > 0 ? (income - expense) / income : null
+    // Compare like with like: a partial current month is compared via its projection
+    const comparableChange =
+      prevExpense > 0 ? (((isCurrent ? projectedExpense : expense) - prevExpense) / prevExpense) * 100 : null
 
-    const changePercent =
-      prevMonthTotal > 0 ? ((thisMonthTotal - prevMonthTotal) / prevMonthTotal) * 100 : 0
+    const health = healthScore({
+      savingsRate,
+      budgetAdherence: budgetRows.length
+        ? budgetRows.reduce((s, b) => s + (b.status === 'ok' ? 1 : b.status === 'warning' ? 0.5 : 0), 0) / budgetRows.length
+        : null,
+      expenseChangePercent: comparableChange,
+    })
+
+    const insights = generateInsights({
+      formatAmount: fmt,
+      expense,
+      income,
+      prevExpense,
+      byCategory,
+      weekendShare,
+      budgets: budgetRows,
+      isCurrentMonth: isCurrent,
+    })
 
     return {
-      month: month || `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}`,
-      total: thisMonthTotal,
-      prevMonthTotal,
+      month,
+      currency,
+      // `total` kept for backwards compatibility: it is the month's expense total
+      total: expense,
+      expense,
+      income,
+      net: income - expense,
+      prevMonthTotal: prevExpense,
+      prevToDate,
+      prevIncome,
       changePercent: Math.round(changePercent * 10) / 10,
-      byCategory: Object.values(byCategory).sort((a, b) => b.total - a.total),
+      savingsRate,
+      historicalAvg,
+      projectedExpense,
+      daysInMonth: totalDays,
+      elapsedDays: elapsed,
+      byCategory,
+      incomeByCategory,
+      daily,
       last7Days,
+      weekendShare,
+      budget: {
+        total: totalBudget,
+        spent: budgetedSpent,
+        remaining: totalBudget - budgetedSpent,
+        safePerDay: isCurrent ? safeToSpendPerDay(totalBudget, budgetedSpent, daysLeft + 1) : 0,
+        items: budgetRows,
+      },
+      health,
+      insights,
+      transactionCount: thisMonth.length,
     }
   },
 
-  async getTrend(userId: string, months = 6) {
-    const now = new Date()
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-    const start = new Date(now.getFullYear(), now.getMonth() - months + 1, 1)
+  async getTrend(userId: string, months = 6, endMonth: string = currentMonth()) {
+    const keys = monthSeries(endMonth, months)
+    const start = monthRange(keys[0]).start
+    const end = monthRange(endMonth).end
 
-    // Single query instead of N+1
-    const allTxns = await prisma.transaction.findMany({
-      where: { userId, date: { gte: start, lte: end } },
+    const txns = await prisma.transaction.findMany({
+      where: { userId, date: { gte: start, lt: end } },
+      select: { amount: true, type: true, date: true },
     })
 
-    // Group by month in JS
-    const monthlyMap: Record<string, number> = {}
-    for (let i = months - 1; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-      monthlyMap[key] = 0
-    }
-
-    for (const txn of allTxns) {
-      const key = `${txn.date.getFullYear()}-${String(txn.date.getMonth() + 1).padStart(2, '0')}`
-      if (key in monthlyMap) {
-        monthlyMap[key] += txn.amount
+    const rows = new Map(keys.map((k) => [k, { month: k, expense: 0, income: 0 }]))
+    const weekday = WEEKDAYS.map((day) => ({ day, total: 0, count: 0 }))
+    for (const t of txns) {
+      const row = rows.get(monthKey(t.date))
+      if (!row) continue
+      if (t.type === 'income') row.income += t.amount
+      else {
+        row.expense += t.amount
+        const w = weekday[t.date.getUTCDay()]
+        w.total += t.amount
+        w.count += 1
       }
     }
 
-    return Object.entries(monthlyMap)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([month, total]) => ({ month, total }))
+    // Number of each weekday in the range, so averages are per occurrence of that day
+    const dayCounts = Array(7).fill(0)
+    for (let d = new Date(start); d < end && d <= new Date(); d = new Date(d.getTime() + 86_400_000)) {
+      dayCounts[d.getUTCDay()]++
+    }
+
+    const trend = [...rows.values()].map((r) => ({
+      ...r,
+      total: r.expense,
+      net: r.income - r.expense,
+      savingsRate: r.income > 0 ? (r.income - r.expense) / r.income : null,
+    }))
+
+    // Monday-first for display
+    const ordered = [...weekday.slice(1), weekday[0]].map((w) => ({
+      ...w,
+      average: (() => {
+        const idx = WEEKDAYS.indexOf(w.day)
+        return dayCounts[idx] > 0 ? w.total / dayCounts[idx] : 0
+      })(),
+    }))
+
+    return { trend, weekday: ordered }
+  },
+
+  /** Forecast next month's spending from complete months + the current month's projection. */
+  async getForecast(userId: string) {
+    const cur = currentMonth()
+    const [dashboard, { trend }] = await Promise.all([
+      this.getDashboard(userId, cur),
+      this.getTrend(userId, 6, addMonths(cur, -1)),
+    ])
+    const series = [...trend.map((t) => t.expense), dashboard.projectedExpense]
+    const forecast = forecastNext(series)
+    return {
+      ...forecast,
+      month: addMonths(cur, 1),
+      currentProjected: dashboard.projectedExpense,
+      basis: [...trend.map((t) => ({ month: t.month, total: t.expense })), { month: cur, total: dashboard.projectedExpense }],
+      currency: dashboard.currency,
+    }
+  },
+
+  /** Deterministic budget suggestions for `month` from the 6 complete months before it. */
+  async getBudgetSuggestions(userId: string, month: string) {
+    const lastComplete = addMonths(month, -1)
+    const keys = monthSeries(lastComplete, 6)
+    const [txns, categories, currency] = await Promise.all([
+      prisma.transaction.findMany({
+        where: {
+          userId,
+          type: 'expense',
+          date: { gte: monthRange(keys[0]).start, lt: monthRange(month).end },
+        },
+        select: { amount: true, date: true, categoryId: true },
+      }),
+      prisma.category.findMany({ where: { userId, type: 'expense' } }),
+      getCurrency(userId),
+    ])
+    // When planning the running month, its own spending (projected to month end) counts as the
+    // newest data point once a week has passed — so brand-new users still get suggestions.
+    const elapsed = elapsedDays(month)
+    const includeCurrent = month === currentMonth() && elapsed >= 7
+    const history: CategoryHistory[] = categories.map((c) => {
+      const spentIn = (k: string) =>
+        txns.filter((t) => t.categoryId === c.id && monthKey(t.date) === k).reduce((s, t) => s + t.amount, 0)
+      const monthly = keys.map(spentIn)
+      if (includeCurrent) monthly.push(projectMonthEnd(spentIn(month), elapsed, daysInMonth(month), null))
+      return { categoryId: c.id, name: c.name, monthly }
+    })
+    const fmt = (n: number) => formatMoney(n, currency)
+    return { suggestions: suggestBudgets(history, fmt), currency, history }
   },
 }
