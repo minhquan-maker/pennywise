@@ -9,16 +9,15 @@ const SIZES = {
   lg: { box: 'h-12 w-12', icon: 'h-5 w-5' },
 }
 
-/** Line icon tinted with the category colour on a soft rounded tile. */
+/** Line icon in the category colour on a soft circular disc (stroke deepened so light hues stay legible on white). */
 export function CategoryIcon({ icon, color, size = 'md', className }: { icon: string; color: string; size?: keyof typeof SIZES; className?: string }) {
   const s = SIZES[size]
   return (
     <span
-      className={cn('flex flex-shrink-0 items-center justify-center rounded-[30%]', s.box, className)}
+      className={cn('flex flex-shrink-0 items-center justify-center rounded-full', s.box, className)}
       style={{
-        color,
-        backgroundColor: `color-mix(in srgb, ${color} 14%, transparent)`,
-        boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${color} 22%, transparent)`,
+        color: `color-mix(in srgb, ${color} 82%, #0e0f0c)`,
+        backgroundColor: `color-mix(in srgb, ${color} 16%, white)`,
       }}
     >
       {createElement(resolveCategoryIcon(icon), { className: s.icon, strokeWidth: 1.9 })}

@@ -1,6 +1,6 @@
 # PennyWise — AI Personal Finance
 
-PennyWise tracks spending and income, plans budgets that know your pace, and forecasts next month — with insights that explain every number. The interface follows a "graphite + mint" design language (neutral graphite surfaces, a soft mint accent, heavy condensed display type, pill controls and a glowing ring motif). It supports USD and VND and works on desktop and phones (installable to the iPhone home screen; a native iOS app is next).
+PennyWise tracks spending and income, plans budgets that know your pace, and forecasts next month — with insights that explain every number. The interface follows a "forest + lime" design language inspired by Wise (a clean white canvas, deep forest-green sections, a single lime accent, block-letter display type and pill controls). It supports USD and VND and works on desktop and phones (installable to the iPhone home screen; a native iOS app is next).
 
 All smart features run on PennyWise's own **finance engine**, so they work without any API key. When `GROQ_API_KEY` is set, an LLM additionally rewrites summaries, insights and explanations in natural language; every response is tagged `source: "ai" | "engine"`.
 
@@ -196,16 +196,18 @@ cd ../frontend && npx tsc -b && npm run lint && npm run build
 
 | Token | Value |
 | --- | --- |
-| Background | `#0B0C0F` |
-| Surface / 2 / 3 | `#121418` / `#191B20` / `#20232A` |
-| Line / strong | `#262A31` / `#353A44` |
-| Accent (mint) | `#3DD9A0` |
-| Cream section | `#F1F0E8` |
-| Text primary / secondary / tertiary | `#F3F4F6` / `#A3A9B5` / `#6C7380` |
-| Display font | Anton (uppercase) |
+| Background / surface | `#FFFFFF` |
+| Wells (surface-2 / Fog) | `#F4F5F2` / `#E8EBE6` |
+| Line / strong | `#E2E5DF` / `#C8CCC4` |
+| Forest Ink (dark sections, nav) | `#163300` |
+| Lime Voltage (accent fill) | `#9FE870` |
+| Linen Mist (tints) | `#E2F6D5` |
+| Positive ink | `#2F5711` |
+| Text primary / secondary / tertiary | `#0E0F0C` / `#454745` / `#6A6C6A` |
+| Display font | Inter Tight 900 (uppercase) |
 | Body font | Inter |
 
-Chart and category colours follow a categorical order validated for colour-vision deficiency on the dark surface.
+Chart and category colours follow a categorical order validated for colour-vision deficiency on the white surface.
 
 ## Roadmap
 

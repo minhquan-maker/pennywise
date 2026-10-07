@@ -17,12 +17,7 @@ export function EmptyState({
   return (
     <div className={cn('flex flex-col items-center px-6 py-12 text-center', className)}>
       {icon && (
-        <div className="relative mb-5">
-          <div className="absolute inset-0 rounded-full bg-primary-500/20 blur-xl" />
-          <div className="relative flex h-16 w-16 items-center justify-center rounded-full border border-line-strong bg-surface-2 text-primary-400">
-            {icon}
-          </div>
-        </div>
+        <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 text-forest">{icon}</div>
       )}
       <p className="text-base font-semibold text-text-primary">{title}</p>
       {description && <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-text-secondary">{description}</p>}

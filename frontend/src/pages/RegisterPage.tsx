@@ -24,12 +24,12 @@ export function RegisterPage() {
 
   return (
     <AuthShell title="Your money journey" accent="starts here" subtitle="Track spending and income, set budgets that adapt, and see next month before it happens.">
-      <div className="rounded-[var(--radius-3xl)] border border-line bg-surface/90 p-6 shadow-[0_40px_100px_-30px_rgba(0,0,0,0.9)] backdrop-blur sm:p-8">
-        <h2 className="text-xl font-semibold text-text-primary">Create your account</h2>
+      <div className="rounded-[var(--radius-3xl)] border border-line bg-surface p-6 sm:p-8">
+        <h2 className="text-2xl font-bold tracking-[-0.02em] text-text-primary">Create your account</h2>
         <ul className="mt-3 space-y-1.5">
           {PERKS.map((p) => (
             <li key={p} className="flex items-center gap-2 text-[13px] text-text-secondary">
-              <Check className="h-3.5 w-3.5 text-primary-400" /> {p}
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-forest text-primary-500"><Check className="h-2.5 w-2.5" strokeWidth={3.5} /></span> {p}
             </li>
           ))}
         </ul>
@@ -53,7 +53,7 @@ export function RegisterPage() {
               <div className="mt-2 flex items-center gap-2">
                 <div className="flex flex-1 gap-1">
                   {[0, 1, 2, 3].map((i) => (
-                    <span key={i} className={cn('h-1 flex-1 rounded-full transition-colors', i < strength ? (strength >= 3 ? 'bg-primary-500' : strength >= 2 ? 'bg-warning-500' : 'bg-danger-500') : 'bg-surface-3')} />
+                    <span key={i} className={cn('h-1 flex-1 rounded-full transition-colors', i < strength ? (strength >= 3 ? 'bg-positive' : strength >= 2 ? 'bg-warning-500' : 'bg-danger-500') : 'bg-surface-3')} />
                   ))}
                 </div>
                 <span className="text-[11px] text-text-tertiary">{password.length < 8 ? 'Too short' : strength >= 3 ? 'Strong' : strength >= 2 ? 'Okay' : 'Weak'}</span>
@@ -67,7 +67,7 @@ export function RegisterPage() {
 
         <p className="mt-6 text-center text-sm text-text-secondary">
           Already have an account?{' '}
-          <Link to="/login" className="font-semibold text-primary-400 hover:underline">
+          <Link to="/login" className="font-semibold text-forest underline underline-offset-4">
             Sign in
           </Link>
         </p>

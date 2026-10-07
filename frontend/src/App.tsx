@@ -73,14 +73,15 @@ export default function App() {
         <AppRoutes />
         <Toaster
           position="top-center"
-          theme="dark"
+          theme="light"
           closeButton
           offset={16}
           toastOptions={{
             style: {
-              background: 'var(--color-surface-2)',
-              border: '1px solid var(--color-line-strong)',
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-line)',
               borderRadius: '9999px',
+              boxShadow: 'var(--shadow-lift)',
               color: 'var(--color-text-primary)',
               fontFamily: 'var(--font-sans)',
             },

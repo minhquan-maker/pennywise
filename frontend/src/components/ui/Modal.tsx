@@ -49,14 +49,14 @@ export function Modal({ isOpen, onClose, title, description, children, footer, s
 
   return createPortal(
     <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby={title ? titleId : undefined}>
-      <div className="animate-fade-in fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="animate-fade-in fixed inset-0 bg-text-primary/45" onClick={onClose} />
       <div
         ref={panelRef}
         tabIndex={-1}
         className={cn(
-          'relative flex max-h-[92dvh] w-full flex-col overflow-hidden border border-line-strong/70 bg-surface outline-none',
+          'relative flex max-h-[92dvh] w-full flex-col overflow-hidden bg-surface outline-none',
           'animate-sheet-in rounded-t-[var(--radius-3xl)] sm:animate-scale-in sm:rounded-[var(--radius-3xl)]',
-          'shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)]',
+          'shadow-[var(--shadow-float)]',
           sizeClasses[size]
         )}
       >
@@ -64,7 +64,7 @@ export function Modal({ isOpen, onClose, title, description, children, footer, s
         {title && (
           <div className="flex flex-shrink-0 items-start justify-between gap-4 px-6 pb-2 pt-4 sm:pt-6">
             <div>
-              <h2 id={titleId} className="text-lg font-semibold text-text-primary">
+              <h2 id={titleId} className="text-xl font-bold tracking-[-0.02em] text-text-primary">
                 {title}
               </h2>
               {description && <p className="mt-1 text-sm text-text-secondary">{description}</p>}
@@ -72,7 +72,7 @@ export function Modal({ isOpen, onClose, title, description, children, footer, s
             <button
               onClick={onClose}
               aria-label="Close"
-              className="-mr-2 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-text-tertiary transition-colors hover:bg-surface-3 hover:text-text-primary"
+              className="-mr-2 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-surface-3 text-forest transition-colors hover:bg-line-strong/70"
             >
               <X className="h-5 w-5" />
             </button>

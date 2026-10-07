@@ -32,11 +32,11 @@ export function ForecastChart({ prediction, currency }: { prediction: Prediction
             if (name === 'band' && Array.isArray(v)) return [`${formatCurrency(v[0], currency)} – ${formatCurrency(v[1], currency)}`, 'Likely range']
             return [formatCurrency(Number(v), currency), name === 'actual' ? 'Spent' : 'Forecast']
           }}
-          cursor={{ stroke: '#353a44' }}
+          cursor={CHART.cursorLine}
         />
-        <Area dataKey="band" stroke="none" fill={CHART.income} fillOpacity={0.12} isAnimationActive={false} />
-        <Line dataKey="actual" stroke={CHART.income} strokeWidth={2} dot={{ r: 3.5, fill: CHART.income, strokeWidth: 0 }} activeDot={{ r: 5 }} />
-        <Line dataKey="forecast" stroke={CHART.income} strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4, fill: 'var(--color-surface)', stroke: CHART.income, strokeWidth: 2 }} connectNulls />
+        <Area dataKey="band" stroke="none" fill={CHART.wash} fillOpacity={0.45} isAnimationActive={false} />
+        <Line dataKey="actual" stroke={CHART.ink} strokeWidth={2} dot={{ r: 4, fill: CHART.ink, strokeWidth: 2, stroke: 'var(--color-surface)' }} activeDot={{ r: 5 }} />
+        <Line dataKey="forecast" stroke={CHART.ink} strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4, fill: 'var(--color-surface)', stroke: CHART.ink, strokeWidth: 2 }} connectNulls />
       </ComposedChart>
     </ResponsiveContainer>
   )

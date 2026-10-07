@@ -58,7 +58,7 @@ export function ConfirmDialog({
       }
     >
       <div className="flex flex-col items-center pt-4 text-center">
-        <span className={tone === 'danger' ? 'mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-danger-500/12 text-danger-400' : 'mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary-500/12 text-primary-400'}>
+        <span className={tone === 'danger' ? 'mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-danger-500/10 text-danger-500' : 'mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary-100 text-forest'}>
           <AlertTriangle className="h-6 w-6" />
         </span>
         <h3 className="text-lg font-semibold text-text-primary">{title}</h3>

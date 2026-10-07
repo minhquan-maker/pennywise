@@ -88,13 +88,13 @@ export function TransactionsPage() {
       {/* Summary */}
       <div className="grid grid-cols-3 gap-2 sm:gap-4">
         {[
-          { label: 'Income', value: fmt(totals.income), className: 'text-primary-400' },
+          { label: 'Income', value: fmt(totals.income), className: 'text-positive' },
           { label: 'Spending', value: fmt(totals.expense), className: 'text-text-primary' },
-          { label: 'Net', value: formatCurrency(totals.net, currency, { sign: true }), className: totals.net < 0 ? 'text-danger-400' : 'text-text-primary' },
+          { label: 'Net', value: formatCurrency(totals.net, currency, { sign: true }), className: totals.net < 0 ? 'text-danger-500' : 'text-text-primary' },
         ].map((s) => (
-          <div key={s.label} className="rounded-[var(--radius-xl)] border border-line bg-surface px-3 py-3 sm:px-5 sm:py-4">
-            <p className="text-[11px] font-medium text-text-tertiary sm:text-xs">{s.label}</p>
-            <p className={cn('num mt-1 truncate text-[13px] font-bold sm:text-2xl', s.className)}>{s.value}</p>
+          <div key={s.label} className="rounded-[var(--radius-xl)] bg-surface-3 px-3 py-3 sm:px-5 sm:py-4">
+            <p className="text-[11px] font-semibold text-text-secondary sm:text-xs">{s.label}</p>
+            <p className={cn('num mt-1 truncate font-display text-[13px] font-black tracking-[-0.03em] sm:text-[26px]', s.className)}>{s.value}</p>
           </div>
         ))}
       </div>
@@ -184,7 +184,7 @@ export function TransactionsPage() {
               <section key={day}>
                 <div className="mb-2 flex items-center justify-between px-1">
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">{formatDayHeading(day)}</h3>
-                  <span className={cn('num text-xs font-semibold', dayNet >= 0 ? 'text-primary-400' : 'text-text-tertiary')}>
+                  <span className={cn('num text-xs font-semibold', dayNet >= 0 ? 'text-positive' : 'text-text-tertiary')}>
                     {formatCurrency(dayNet, currency, { sign: true })}
                   </span>
                 </div>
@@ -200,7 +200,7 @@ export function TransactionsPage() {
                           <p className="truncate text-sm font-semibold text-text-primary">{t.note || t.category.name}</p>
                           <p className="truncate text-xs text-text-tertiary">{t.category.name}</p>
                         </div>
-                        <span className={cn('num text-[15px] font-bold', t.type === 'income' ? 'text-primary-400' : 'text-text-primary')}>
+                        <span className={cn('num text-[15px] font-bold', t.type === 'income' ? 'text-positive' : 'text-text-primary')}>
                           {t.type === 'income' ? '+' : '−'}
                           {fmt(t.amount)}
                         </span>
@@ -208,7 +208,7 @@ export function TransactionsPage() {
                       <button
                         onClick={() => deleteTxn.mutate(t)}
                         aria-label={`Delete ${t.note || t.category.name}`}
-                        className="mr-2 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-text-tertiary transition-all hover:bg-danger-500/12 hover:text-danger-400 lg:opacity-0 lg:group-hover:opacity-100 lg:focus:opacity-100"
+                        className="mr-2 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-text-tertiary transition-all hover:bg-danger-500/10 hover:text-danger-500 lg:opacity-0 lg:group-hover:opacity-100 lg:focus:opacity-100"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -234,7 +234,7 @@ export function TransactionsPage() {
           <Button
             variant="ghost"
             size="sm"
-            className="hover:!bg-danger-500/12 hover:!text-danger-400"
+            className="hover:!bg-danger-500/10 hover:!text-danger-500"
             icon={<Trash2 className="h-4 w-4" />}
             onClick={() => setConfirmClear(true)}
           >

@@ -4,6 +4,7 @@ import { Modal } from './Modal'
 import { Button } from './Button'
 import { SegmentedControl } from './SegmentedControl'
 import { CategoryIcon } from './CategoryIcon'
+import { fieldClass } from './Input'
 import { cn, currencySymbol, formatCurrency, shiftDay, todayISO } from '@/lib/utils'
 import { useCategories, useCreateTransaction, useUpdateTransaction } from '@/hooks/useQueries'
 import { useAuthStore } from '@/stores/auth.store'
@@ -89,12 +90,9 @@ function TransactionForm({ isOpen, onClose, initialData, defaultType = 'expense'
         {/* Amount */}
         <div>
           <div
-            className={cn(
-              'flex items-center justify-center gap-1 rounded-[var(--radius-xl)] border border-line bg-surface-2 px-4 py-5 transition-colors focus-within:border-primary-500',
-              type === 'income' && 'focus-within:border-primary-400'
-            )}
+            className="flex items-center justify-center gap-1 rounded-[var(--radius-xl)] border-2 border-transparent bg-surface-3 px-4 py-5 transition-colors focus-within:border-forest"
           >
-            <span className="flex-shrink-0 whitespace-nowrap text-2xl font-semibold text-text-tertiary">{type === 'income' ? '+' : '−'}{currencySymbol(currency)}</span>
+            <span className={cn('flex-shrink-0 whitespace-nowrap font-display text-2xl font-black', type === 'income' ? 'text-positive' : 'text-text-tertiary')}>{type === 'income' ? '+' : '−'}{currencySymbol(currency)}</span>
             <input
               data-autofocus
               type="number"
@@ -105,7 +103,7 @@ function TransactionForm({ isOpen, onClose, initialData, defaultType = 'expense'
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0"
               aria-label="Amount"
-              className="num w-full min-w-0 max-w-[11ch] bg-transparent text-center text-4xl sm:text-5xl font-bold text-text-primary placeholder:text-text-tertiary/50 focus:outline-none"
+              className="num w-full min-w-0 max-w-[11ch] bg-transparent text-center font-display text-4xl font-black tracking-[-0.04em] text-text-primary placeholder:text-text-tertiary/50 focus:outline-none sm:text-5xl"
             />
           </div>
           <div className="mt-3 flex flex-wrap justify-center gap-2">
@@ -117,8 +115,8 @@ function TransactionForm({ isOpen, onClose, initialData, defaultType = 'expense'
                 className={cn(
                   'num rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-all',
                   parsed === q
-                    ? 'border-primary-500 bg-primary-500 text-forest'
-                    : 'border-line bg-surface-2 text-text-secondary hover:border-line-strong hover:text-text-primary'
+                    ? 'border-forest bg-forest text-white'
+                    : 'border-line bg-surface text-forest hover:border-forest'
                 )}
               >
                 {formatCurrency(q, currency, { compact: currency === 'VND' })}
@@ -129,7 +127,7 @@ function TransactionForm({ isOpen, onClose, initialData, defaultType = 'expense'
 
         {/* Category */}
         <div>
-          <p className="mb-2.5 text-[13px] font-medium text-text-secondary">Category</p>
+          <p className="mb-2.5 text-[13px] font-semibold text-text-secondary">Category</p>
           {typed.length === 0 ? (
             <p className="text-sm text-text-tertiary">No {type} categories yet — add one in Settings.</p>
           ) : (
@@ -143,8 +141,8 @@ function TransactionForm({ isOpen, onClose, initialData, defaultType = 'expense'
                   className={cn(
                     'flex flex-col items-center gap-1.5 rounded-[var(--radius-lg)] border px-2 py-3 text-xs font-medium transition-all',
                     selectedId === c.id
-                      ? 'border-primary-500 bg-primary-500/10 text-text-primary'
-                      : 'border-line bg-surface-2 text-text-secondary hover:border-line-strong hover:text-text-primary'
+                      ? 'border-forest bg-primary-100 font-semibold text-forest ring-1 ring-forest'
+                      : 'border-line bg-surface text-text-secondary hover:border-forest/40 hover:text-text-primary'
                   )}
                 >
                   <CategoryIcon icon={c.icon} color={c.color} size="sm" />
@@ -159,7 +157,7 @@ function TransactionForm({ isOpen, onClose, initialData, defaultType = 'expense'
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <div className="mb-2.5 flex items-center justify-between">
-              <label htmlFor="txn-date" className="text-[13px] font-medium text-text-secondary">
+              <label htmlFor="txn-date" className="text-[13px] font-semibold text-text-secondary">
                 Date
               </label>
               <div className="flex gap-1">
@@ -173,7 +171,7 @@ function TransactionForm({ isOpen, onClose, initialData, defaultType = 'expense'
                     onClick={() => setDate(d.value)}
                     className={cn(
                       'rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors',
-                      date === d.value ? 'bg-primary-500/15 text-primary-400' : 'text-text-tertiary hover:text-text-primary'
+                      date === d.value ? 'bg-primary-100 text-forest' : 'text-text-tertiary hover:text-forest'
                     )}
                   >
                     {d.label}
@@ -189,12 +187,12 @@ function TransactionForm({ isOpen, onClose, initialData, defaultType = 'expense'
                 value={date}
                 max={today}
                 onChange={(e) => setDate(e.target.value)}
-                className="h-12 w-full rounded-[var(--radius-md)] border border-line bg-surface-2 pl-11 pr-3 text-[15px] text-text-primary focus:border-primary-500 focus:outline-none"
+                className={cn(fieldClass, 'pl-11 pr-3')}
               />
             </div>
           </div>
           <div>
-            <label htmlFor="txn-note" className="mb-2.5 block text-[13px] font-medium text-text-secondary">
+            <label htmlFor="txn-note" className="mb-2.5 block text-[13px] font-semibold text-text-secondary">
               Note <span className="text-text-tertiary">(optional)</span>
             </label>
             <div className="relative">
@@ -206,7 +204,7 @@ function TransactionForm({ isOpen, onClose, initialData, defaultType = 'expense'
                 maxLength={200}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder={type === 'income' ? 'e.g. October salary' : 'e.g. Lunch with team'}
-                className="h-12 w-full rounded-[var(--radius-md)] border border-line bg-surface-2 pl-11 pr-3 text-[15px] text-text-primary placeholder:text-text-tertiary focus:border-primary-500 focus:outline-none"
+                className={cn(fieldClass, 'pl-11 pr-3')}
               />
             </div>
           </div>
