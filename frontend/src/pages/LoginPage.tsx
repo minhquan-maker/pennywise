@@ -20,8 +20,8 @@ export function LoginPage() {
 
   return (
     <AuthShell title="Welcome" accent="back" subtitle="Your budgets, forecasts and insights are right where you left them.">
-      <div className="rounded-[var(--radius-3xl)] border border-line bg-surface/90 p-6 shadow-[0_40px_100px_-30px_rgba(0,0,0,0.9)] backdrop-blur sm:p-8">
-        <h2 className="text-xl font-semibold text-text-primary">Sign in</h2>
+      <div className="rounded-[var(--radius-3xl)] border border-line bg-surface p-6 sm:p-8">
+        <h2 className="text-2xl font-bold tracking-[-0.02em] text-text-primary">Sign in</h2>
         <p className="mt-1 text-sm text-text-secondary">Continue to your PennyWise account.</p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -50,7 +50,7 @@ export function LoginPage() {
 
         <p className="mt-6 text-center text-sm text-text-secondary">
           New here?{' '}
-          <Link to="/register" className="font-semibold text-primary-400 hover:underline">
+          <Link to="/register" className="font-semibold text-forest underline underline-offset-4">
             Create an account
           </Link>
         </p>

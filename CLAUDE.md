@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AI-powered personal finance tracker: expenses and income, budgets with pace/projection, forecasts and insights. "Graphite + mint" design (neutral graphite surfaces, soft mint accent, Anton display type), layout language inspired by tomorro.com. Web first; a native iOS app on the same API comes next (see `docs/plan-2026-10-redesign.md`).
+AI-powered personal finance tracker: expenses and income, budgets with pace/projection, forecasts and insights. "Forest + lime" design after Wise's visual language (white canvas with fog wells and hairlines, Forest Ink for weight and dark sections, Lime Voltage as the single fill accent, ultra-heavy uppercase display type, pills everywhere). Web first; a native iOS app on the same API comes next (see `docs/plan-2026-10-redesign.md`).
 
 ## Development Commands
 
@@ -45,7 +45,7 @@ cd frontend && npx tsc -b && npm run lint && npm run build
 ### Frontend
 
 - **Framework:** React 19 + Vite + TypeScript + React Router v6
-- **Styling:** Tailwind CSS v4 tokens in `frontend/src/index.css` `@theme` (`bg`, `surface`, `surface-2/3`, `line`, `line-strong`, `primary-*`, `cream`, `forest`, `text-*`). Use tokens, never raw hex in components. Custom classes (`.display`, `.eyebrow`, `.num`, `.orb`, `.grain`, `.glow-top`) live in `@layer components` so utilities can override them — unlayered rules beat Tailwind utilities.
+- **Styling:** Tailwind CSS v4 tokens in `frontend/src/index.css` `@theme` (`bg`, `surface`, `surface-2/3`, `line`, `line-strong`, `pebble`, `primary-*`, `forest`, `positive`, `text-*`). Use tokens, never raw hex in components. Custom classes (`.display`, `.eyebrow`, `.num`, `.mark`, `.skeleton`) live in `@layer components` so utilities can override them — unlayered rules beat Tailwind utilities.
 - **State:** Zustand (`auth.store`, `ui.store` for the global add/edit transaction sheet) + TanStack Query (all server state)
 - **API client:** `frontend/src/lib/axios.ts` — Axios with JWT interceptor (auto-attaches Bearer token) and 401 auto-logout interceptor.
 
@@ -63,7 +63,7 @@ const mutation = useMutation({
 
 Query hooks are centralized in `frontend/src/hooks/useQueries.ts`. Import from there, do NOT create inline hooks. Mutations that touch transactions/budgets call `invalidateFinance(qc)` (transactions, dashboard, budgets, trend).
 
-**UI kit** (`components/ui`): `Button` (pill variants), `Card`/`CardHeader`, `Input`/`Select` (`fieldClass`), `Modal` (bottom sheet on phones), `ConfirmDialog` (optional type-to-confirm), `SegmentedControl`, `MonthStepper`, `StatCard`, `ProgressBar` (with pace tick), `ScoreRing`/`Orb`, `EmptyState`, `PageHeader`, `CategoryIcon`, `SourceTag`, `InsightList`, `TransactionModal`. Charts in `components/charts` share `theme.ts`.
+**UI kit** (`components/ui`): `Button` (pill variants), `Card`/`CardHeader` (`default` hairline, `fog` well, `forest` inverted), `Input`/`Select` (`fieldClass`), `Modal` (bottom sheet on phones), `ConfirmDialog` (optional type-to-confirm), `SegmentedControl`, `MonthStepper`, `StatCard`, `ProgressBar` (with pace tick), `ScoreRing`/`Orb`, `EmptyState`, `PageHeader`, `CategoryIcon`, `SourceTag`, `InsightList`, `TransactionModal`. Charts in `components/charts` share `theme.ts`.
 
 **Dates:** transaction dates are calendar days sent as `YYYY-MM-DD` and stored as UTC midnight. Format with `formatDate` (UTC) and get "today" with `todayISO()` (local) — never `new Date().toISOString()` for a day.
 
@@ -142,9 +142,9 @@ Default expense + income categories are seeded idempotently by `categoryService.
 
 ## Design System
 
-- **Palette:** bg `#0B0C0F`, surface `#121418` / `#191B20` / `#20232A`, line `#262A31`, accent mint `#3DD9A0` (`primary-500`), cream `#F1F0E8` for light marketing sections, `forest` `#0D1B17` text on light/mint. Avoid saturated neon or green-tinted surfaces — the user found them too harsh.
-- **Type:** Anton via `.display` (uppercase headlines), Inter body, `.num` for tabular figures, `.eyebrow` for small caps labels.
+- **Palette (Wise-inspired, light):** bg/surface `#FFFFFF`, wells `#F4F5F2` / Fog `#E8EBE6`, line `#E2E5DF` / `#C8CCC4`, input border Pebble `#868685`. Forest Ink `#163300` (`forest`) for dark sections, nav and text on lime; Lime Voltage `#9FE870` (`primary-500`) only as a *fill* (primary CTA, active segment/nav, highlights) or as text on forest — never lime text on white; Linen Mist `#E2F6D5` (`primary-100`) for soft tints. "Good/income" ink is `positive` `#2F5711`; text Obsidian `#0E0F0C` / Charcoal `#454745` / Slate `#6A6C6A`; danger `#CB272F`, warning `#A86100`. Flat: no glows, gradients or blurs — rhythm comes from white → mist → forest sections. Keep lime to roughly one element per view.
+- **Type:** Inter Tight 900 via `.display` (uppercase, tracking −0.035em, line-height 0.9; stands in for Wise Sans), Inter body, `.num` for tabular figures, `.eyebrow` for small caps labels, `.mark` for a lime highlighter behind one headline word on light surfaces.
 - **Icons:** Lucide line icons only — no emoji. Category icons are stored as keys (`utensils`, `bus`, …) from `frontend/src/lib/categoryIcons.ts` and rendered by `CategoryIcon`; legacy emoji values are mapped on read and default categories are upgraded server-side.
-- **Shapes:** pill buttons (`rounded-full`), cards `rounded-[var(--radius-2xl)]`, sheets `--radius-3xl`; glowing ring `Orb`/`ScoreRing`.
-- **Charts/categories:** colours from a CVD-validated categorical order (`#3987e5, #d95926, #199e70, #c98500, #d55181, #9085e9`); income `#3DD9A0` vs spending `#d95926`. One y-axis per chart, legend for ≥2 series.
+- **Shapes:** pill buttons, tabs and tags (`rounded-full`), 10px fields, cards `rounded-[var(--radius-2xl)]` (24px), sheets/feature cards `--radius-3xl` (32px); flat lime coin `Orb`, `ScoreRing`; circular `CategoryIcon`s.
+- **Charts/categories:** colours from a CVD-validated categorical order (`#3987e5, #d95926, #199e70, #c98500, #d55181, #9085e9`); income `#7cc84a` vs spending `#d95926` (validated for CVD on white); single-series lines use forest ink over a lime wash. One y-axis per chart, legend for ≥2 series.
 - **Deploy:** one Vercel project using Services (root `vercel.json`): `/api/*` → `backend` (Express function), everything else → `frontend` (Vite). The frontend build writes per-route `index.html` shells + `404.html` (`frontend/scripts/spa-routes.mjs`) — add new routes there. `backend/Dockerfile` remains as a non-Vercel alternative.

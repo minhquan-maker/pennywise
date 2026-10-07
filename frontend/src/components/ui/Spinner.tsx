@@ -7,7 +7,7 @@ interface SpinnerProps {
 }
 
 const sizeMap = { xs: 'h-3 w-3', sm: 'h-4 w-4', md: 'h-6 w-6', lg: 'h-8 w-8' }
-const colorMap = { primary: 'text-primary-500', current: 'text-current', muted: 'text-text-tertiary' }
+const colorMap = { primary: 'text-forest', current: 'text-current', muted: 'text-text-tertiary' }
 
 export function Spinner({ className = '', size = 'md', color = 'primary' }: SpinnerProps) {
   return (

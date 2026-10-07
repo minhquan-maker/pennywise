@@ -20,8 +20,8 @@ export function PaceChart({ data, currency }: { data: DashboardData; currency: s
       <AreaChart data={rows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="paceFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={CHART.income} stopOpacity={0.28} />
-            <stop offset="100%" stopColor={CHART.income} stopOpacity={0} />
+            <stop offset="0%" stopColor={CHART.wash} stopOpacity={0.7} />
+            <stop offset="100%" stopColor={CHART.wash} stopOpacity={0.1} />
           </linearGradient>
         </defs>
         <CartesianGrid vertical={false} stroke={CHART.grid} strokeDasharray="3 5" />
@@ -47,21 +47,21 @@ export function PaceChart({ data, currency }: { data: DashboardData; currency: s
           itemStyle={CHART.tooltipItem}
           labelFormatter={(l) => formatDate(String(l), { weekday: 'short', month: 'short', day: 'numeric' })}
           formatter={(v, name) => [formatCurrency(Number(v), currency), name === 'spent' ? 'Spent so far' : 'Even pace']}
-          cursor={{ stroke: '#353a44' }}
+          cursor={CHART.cursorLine}
         />
         {target > 0 && (
           <Area type="linear" dataKey="pace" stroke={CHART.budget} strokeDasharray="5 5" strokeWidth={1.5} fill="none" dot={false} activeDot={false} isAnimationActive={false} />
         )}
-        {target > 0 && <ReferenceLine y={target} stroke="#353a44" strokeDasharray="2 4" />}
+        {target > 0 && <ReferenceLine y={target} stroke={CHART.budget} strokeDasharray="2 4" />}
         <Area
           type="monotone"
           dataKey="spent"
-          stroke={CHART.income}
+          stroke={CHART.ink}
           strokeWidth={2}
           fill="url(#paceFill)"
           connectNulls={false}
           dot={false}
-          activeDot={{ r: 5, strokeWidth: 2, stroke: 'var(--color-surface)', fill: CHART.income }}
+          activeDot={{ r: 5, strokeWidth: 2, stroke: 'var(--color-surface)', fill: CHART.ink }}
           animationDuration={900}
         />
       </AreaChart>

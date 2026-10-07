@@ -62,15 +62,15 @@ export function DashboardPage() {
           <p className="eyebrow mb-2">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
-          <h1 className="display text-[40px] text-text-primary sm:text-5xl">
-            {greeting()}, <span className="text-primary-500">{firstName}</span>
+          <h1 className="display text-[40px] text-text-primary sm:text-[56px]">
+            {greeting()}, <span className="mark">{firstName}</span>
           </h1>
         </div>
         <MonthStepper value={month} onChange={setMonth} />
       </div>
 
       {noData ? (
-        <Card variant="glow" padding="lg">
+        <Card variant="fog" padding="lg">
           <EmptyState
             icon={<Wallet className="h-7 w-7" />}
             title={`Nothing logged for ${formatMonth(month)}`}
@@ -91,43 +91,45 @@ export function DashboardPage() {
         <>
           {/* Hero: net + health */}
           <div className="grid gap-4 lg:grid-cols-3">
-            <Card variant="glow" padding="lg" className="grain overflow-hidden lg:col-span-2">
-              <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-                <div>
-                  <p className="eyebrow">Net cash flow · {formatMonth(month)}</p>
+            <Card variant="forest" padding="lg" className="overflow-hidden lg:col-span-2">
+              <div className="flex h-full flex-col justify-between gap-6">
+                <div className="min-w-0">
+                  <p className="eyebrow text-primary-500">Net cash flow · {formatMonth(month)}</p>
                   {isLoading || !d ? (
-                    <Skeleton className="mt-3 h-14 w-56" />
+                    <Skeleton className="mt-3 h-14 w-56 opacity-20" />
                   ) : (
-                    <p className={cn('display num mt-2 text-6xl sm:text-7xl', d.net >= 0 ? 'text-text-primary' : 'text-danger-400')}>
+                    <p className={cn('display num mt-3 text-[clamp(2.25rem,9vw,4.5rem)]', d.net >= 0 ? 'text-primary-500' : 'text-danger-300')}>
                       {formatCurrency(d.net, currency, { sign: true })}
                     </p>
                   )}
-                  <div className="mt-4 flex flex-wrap gap-2 text-[13px]">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-500/12 px-3 py-1 font-semibold text-primary-300">
-                      <ArrowDownRight className="h-3.5 w-3.5" /> In {fmt(d?.income ?? 0)}
+                </div>
+                <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                  <div className="flex flex-wrap gap-2 text-[13px]">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 font-semibold text-white">
+                      <ArrowDownRight className="h-3.5 w-3.5 text-primary-500" /> In {fmt(d?.income ?? 0)}
                     </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-3 px-3 py-1 font-semibold text-text-primary">
-                      <ArrowUpRight className="h-3.5 w-3.5 text-[#d95926]" /> Out {fmt(d?.expense ?? 0)}
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 font-semibold text-white">
+                      <ArrowUpRight className="h-3.5 w-3.5 text-danger-300" /> Out {fmt(d?.expense ?? 0)}
                     </span>
                     {d?.savingsRate !== null && d?.savingsRate !== undefined && (
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1 text-text-secondary">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 px-3 py-1 text-white/80">
                         <PiggyBank className="h-3.5 w-3.5" /> Saving {formatPercent(d.savingsRate)}
                       </span>
                     )}
                   </div>
+                  {isCurrent && d && d.budget.total > 0 && (
+                    <div className="flex-shrink-0 rounded-[var(--radius-lg)] bg-surface p-4 text-forest md:w-60">
+                      <p className="text-xs font-semibold text-text-tertiary">Safe to spend</p>
+                      <p className="num mt-1 font-display text-2xl font-black tracking-[-0.03em]">
+                        {fmt(d.budget.safePerDay)}
+                        <span className="font-sans text-sm font-medium tracking-normal text-text-tertiary"> / day</span>
+                      </p>
+                      <p className="mt-1 text-xs text-text-secondary">
+                        {fmt(Math.max(0, d.budget.remaining))} left for {d.daysInMonth - d.elapsedDays + 1} days
+                      </p>
+                    </div>
+                  )}
                 </div>
-                {isCurrent && d && d.budget.total > 0 && (
-                  <div className="rounded-[var(--radius-xl)] border border-line bg-bg/50 p-4 backdrop-blur md:w-60">
-                    <p className="text-xs text-text-tertiary">Safe to spend</p>
-                    <p className="num mt-1 text-2xl font-bold text-primary-400">
-                      {fmt(d.budget.safePerDay)}
-                      <span className="text-sm font-medium text-text-tertiary"> / day</span>
-                    </p>
-                    <p className="mt-1 text-xs text-text-secondary">
-                      {fmt(Math.max(0, d.budget.remaining))} left for {d.daysInMonth - d.elapsedDays + 1} days
-                    </p>
-                  </div>
-                )}
               </div>
             </Card>
 
@@ -161,10 +163,10 @@ export function DashboardPage() {
               label="Spending"
               loading={isLoading}
               value={fmt(d?.expense ?? 0)}
-              icon={d && d.changePercent > 0 ? <TrendingUp className="h-4 w-4 text-danger-400" /> : <TrendingDown className="h-4 w-4 text-primary-400" />}
+              icon={d && d.changePercent > 0 ? <TrendingUp className="h-4 w-4 text-danger-500" /> : <TrendingDown className="h-4 w-4 text-positive" />}
               hint={
                 d && d.prevToDate > 0 ? (
-                  <span className={d.changePercent > 0 ? 'text-danger-400' : 'text-primary-400'}>
+                  <span className={d.changePercent > 0 ? 'text-danger-500' : 'text-positive'}>
                     {d.changePercent > 0 ? '+' : ''}
                     {d.changePercent}% vs {isCurrent ? 'same point last month' : 'last month'}
                   </span>
@@ -191,7 +193,7 @@ export function DashboardPage() {
                 d && d.budget.total > 0 ? (
                   `${formatPercent(d.budget.spent / d.budget.total)} of ${fmt(d.budget.total)} used`
                 ) : (
-                  <Link to="/budget" className="text-primary-400 hover:underline">
+                  <Link to="/budget" className="font-semibold text-forest underline underline-offset-2">
                     Set a budget →
                   </Link>
                 )
@@ -226,7 +228,7 @@ export function DashboardPage() {
               <CardHeader
                 title="Recent activity"
                 action={
-                  <Link to="/transactions" className="inline-flex items-center gap-1 text-xs font-semibold text-primary-400 hover:underline">
+                  <Link to="/transactions" className="inline-flex items-center gap-1 text-xs font-semibold text-forest underline-offset-2 hover:underline">
                     All <ArrowRight className="h-3 w-3" />
                   </Link>
                 }
@@ -243,14 +245,14 @@ export function DashboardPage() {
                     <li key={t.id}>
                       <button
                         onClick={() => openEdit(t)}
-                        className="flex w-full items-center gap-3 rounded-[var(--radius-md)] px-2 py-2 text-left transition-colors hover:bg-surface-2"
+                        className="flex w-full items-center gap-3 rounded-[var(--radius-md)] px-2 py-2 text-left transition-colors hover:bg-surface-3"
                       >
                         <CategoryIcon icon={t.category.icon} color={t.category.color} size="sm" />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium text-text-primary">{t.note || t.category.name}</p>
                           <p className="text-xs text-text-tertiary">{formatDate(t.date, { month: 'short', day: 'numeric' })}</p>
                         </div>
-                        <span className={cn('num text-sm font-semibold', t.type === 'income' ? 'text-primary-400' : 'text-text-primary')}>
+                        <span className={cn('num text-sm font-semibold', t.type === 'income' ? 'text-positive' : 'text-text-primary')}>
                           {t.type === 'income' ? '+' : '−'}
                           {fmt(t.amount)}
                         </span>
@@ -265,7 +267,7 @@ export function DashboardPage() {
               <CardHeader
                 title="Budgets"
                 action={
-                  <Link to="/budget" className="inline-flex items-center gap-1 text-xs font-semibold text-primary-400 hover:underline">
+                  <Link to="/budget" className="inline-flex items-center gap-1 text-xs font-semibold text-forest underline-offset-2 hover:underline">
                     Manage <ArrowRight className="h-3 w-3" />
                   </Link>
                 }
@@ -303,7 +305,7 @@ export function DashboardPage() {
               )}
             </Card>
 
-            <Card variant="glow">
+            <Card variant="fog">
               <CardHeader
                 title="Insights"
                 icon={<Lightbulb className="h-4 w-4" />}
@@ -329,7 +331,7 @@ export function DashboardPage() {
                 </Button>
               </div>
               {summary && (
-                <div className="mt-4 rounded-[var(--radius-lg)] border-l-2 border-primary-500 bg-surface-2 px-4 py-3">
+                <div className="mt-4 rounded-[var(--radius-lg)] border-l-4 border-primary-500 bg-surface px-4 py-3">
                   <div className="mb-1.5">
                     <SourceTag source={summary.source} />
                   </div>

@@ -30,8 +30,8 @@ import { apiError, cn, getPasswordStrength } from '@/lib/utils'
 import { CATEGORY_ICONS, ICON_KEYS, resolveCategoryKey } from '@/lib/categoryIcons'
 import type { Category, TxType } from '@/types'
 
-// Categorical order validated for colour-vision deficiency on the dark surface
-const PRESET_COLORS = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#9085e9', '#3dd9a0', '#e66767', '#8a958c']
+// Categorical order validated for colour-vision deficiency on the white surface, then brand greens and neutrals
+const PRESET_COLORS = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#9085e9', '#7cc84a', '#e66767', '#8a958c']
 
 type CatForm = { open: boolean; editing: Category | null; name: string; icon: string; color: string; type: TxType }
 
@@ -132,7 +132,7 @@ export function SettingsPage() {
               {pw.next && (
                 <div className="mt-2 flex gap-1">
                   {[0, 1, 2, 3].map((i) => (
-                    <span key={i} className={cn('h-1 flex-1 rounded-full', i < strength ? (strength >= 3 ? 'bg-primary-500' : 'bg-warning-500') : 'bg-surface-3')} />
+                    <span key={i} className={cn('h-1 flex-1 rounded-full', i < strength ? (strength >= 3 ? 'bg-positive' : 'bg-warning-500') : 'bg-surface-3')} />
                   ))}
                 </div>
               )}
@@ -173,14 +173,14 @@ export function SettingsPage() {
         ) : (
           <ul className="grid gap-2 sm:grid-cols-2">
             {shownCats.map((c) => (
-              <li key={c.id} className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-line bg-surface-2/60 px-3 py-2.5">
+              <li key={c.id} className="flex items-center gap-3 rounded-[var(--radius-lg)] bg-surface-2 px-3 py-2.5">
                 <CategoryIcon icon={c.icon} color={c.color} size="sm" />
                 <span className="flex-1 truncate text-sm text-text-primary">{c.name}</span>
-                {c.isDefault && <Badge label="Default" color="#8a958c" size="sm" />}
+                {c.isDefault && <Badge label="Default" color="var(--color-text-tertiary)" size="sm" />}
                 <button
                   onClick={() => openCat(c)}
                   aria-label={`Edit ${c.name}`}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-text-tertiary transition-colors hover:bg-surface-3 hover:text-text-primary"
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-surface-3 hover:text-forest"
                 >
                   <Pencil className="h-3.5 w-3.5" />
                 </button>
@@ -188,7 +188,7 @@ export function SettingsPage() {
                   <button
                     onClick={() => setCatToDelete(c)}
                     aria-label={`Delete ${c.name}`}
-                    className="flex h-8 w-8 items-center justify-center rounded-full text-text-tertiary transition-colors hover:bg-danger-500/12 hover:text-danger-400"
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-danger-500/10 hover:text-danger-500"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -206,15 +206,15 @@ export function SettingsPage() {
           <Button variant="outline" icon={<Download className="h-4 w-4" />} isLoading={exportCsv.isPending} onClick={() => exportCsv.mutate(undefined)}>
             Export all as CSV
           </Button>
-          <Button variant="ghost" className="hover:!bg-danger-500/12 hover:!text-danger-400" icon={<Trash2 className="h-4 w-4" />} onClick={() => setConfirm('clear')}>
+          <Button variant="ghost" className="hover:!bg-danger-500/10 hover:!text-danger-500" icon={<Trash2 className="h-4 w-4" />} onClick={() => setConfirm('clear')}>
             Clear all data
           </Button>
         </div>
       </Card>
 
       {/* Danger zone */}
-      <Card className="border-danger-500/30">
-        <CardHeader title="Danger zone" subtitle="Permanently delete your account and everything in it" icon={<AlertTriangle className="h-4 w-4 text-danger-400" />} />
+      <Card className="border-danger-500/25">
+        <CardHeader title="Danger zone" subtitle="Permanently delete your account and everything in it" icon={<AlertTriangle className="h-4 w-4 text-danger-500" />} />
         <div className="flex flex-wrap gap-2">
           <Button variant="danger" icon={<Trash2 className="h-4 w-4" />} onClick={() => setConfirm('delete')}>
             Delete account
@@ -250,7 +250,7 @@ export function SettingsPage() {
         }
       >
         <div className="space-y-5">
-          <div className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-line bg-surface-2 p-3">
+          <div className="flex items-center gap-3 rounded-[var(--radius-lg)] bg-surface-3 p-3">
             <CategoryIcon icon={catForm.icon} color={catForm.color} size="lg" />
             <div>
               <p className="font-semibold text-text-primary">{catForm.name || 'Category name'}</p>
@@ -270,7 +270,7 @@ export function SettingsPage() {
           )}
           <Input label="Name" value={catForm.name} maxLength={30} placeholder="e.g. Coffee, Rent, Side hustle" onChange={(e) => setCatForm((f) => ({ ...f, name: e.target.value }))} />
           <div>
-            <p className="mb-2 text-[13px] font-medium text-text-secondary">Icon</p>
+            <p className="mb-2 text-[13px] font-semibold text-text-secondary">Icon</p>
             <div className="grid max-h-56 grid-cols-7 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-9">
               {ICON_KEYS.map((key) => {
                 const { icon: Icon, label } = CATEGORY_ICONS[key]
@@ -285,7 +285,7 @@ export function SettingsPage() {
                     onClick={() => setCatForm((f) => ({ ...f, icon: key }))}
                     className={cn(
                       'flex aspect-square items-center justify-center rounded-[var(--radius-sm)] border transition-all',
-                      active ? 'border-primary-500 bg-primary-500/12 text-primary-400' : 'border-transparent bg-surface-2 text-text-secondary hover:border-line-strong hover:text-text-primary'
+                      active ? 'border-forest bg-primary-100 text-forest' : 'border-transparent bg-surface-2 text-text-secondary hover:border-line-strong hover:text-forest'
                     )}
                   >
                     <Icon className="h-[18px] w-[18px]" strokeWidth={1.9} />
@@ -295,7 +295,7 @@ export function SettingsPage() {
             </div>
           </div>
           <div>
-            <p className="mb-2 text-[13px] font-medium text-text-secondary">Colour</p>
+            <p className="mb-2 text-[13px] font-semibold text-text-secondary">Colour</p>
             <div className="flex flex-wrap gap-2">
               {PRESET_COLORS.map((color) => (
                 <button

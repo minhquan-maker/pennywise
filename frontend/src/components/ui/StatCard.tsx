@@ -30,7 +30,7 @@ export function StatCard({
       <div className="flex items-center justify-between gap-2">
         <p className={cn('text-[13px] font-medium', tone === 'accent' ? 'text-forest/70' : 'text-text-secondary')}>{label}</p>
         {icon && (
-          <span className={cn('flex h-8 w-8 items-center justify-center rounded-full', tone === 'accent' ? 'bg-forest/10' : 'bg-surface-3 text-text-secondary')}>
+          <span className={cn('flex h-8 w-8 items-center justify-center rounded-full', tone === 'accent' ? 'bg-forest/10' : 'bg-surface-3 text-forest')}>
             {icon}
           </span>
         )}
@@ -40,9 +40,9 @@ export function StatCard({
       ) : (
         <p
           className={cn(
-            'num mt-2 truncate text-xl font-bold leading-tight sm:text-[28px]',
-            tone === 'positive' && 'text-primary-400',
-            tone === 'negative' && 'text-danger-400',
+            'num mt-2 truncate font-display text-xl font-extrabold leading-tight tracking-[-0.03em] sm:text-[28px]',
+            tone === 'positive' && 'text-positive',
+            tone === 'negative' && 'text-danger-500',
             tone === 'default' && 'text-text-primary'
           )}
         >

@@ -5,7 +5,7 @@ import type { AiSource } from '@/types'
 export function SourceTag({ source }: { source?: AiSource }) {
   if (!source) return null
   return source === 'ai' ? (
-    <span className="inline-flex items-center gap-1 rounded-full bg-primary-500/12 px-2 py-0.5 text-[11px] font-semibold text-primary-400">
+    <span className="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2 py-0.5 text-[11px] font-semibold text-forest">
       <Sparkles className="h-3 w-3" /> AI
     </span>
   ) : (

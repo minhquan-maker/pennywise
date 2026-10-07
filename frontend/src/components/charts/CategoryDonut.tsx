@@ -50,7 +50,7 @@ export function CategoryDonut({ data, currency, centerLabel = 'Spent' }: { data:
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
           <span className="text-[11px] font-medium text-text-tertiary">{shown ? shown.name : centerLabel}</span>
-          <span className="num text-xl font-bold text-text-primary">{formatCurrency(shown ? shown.total : total, currency, { compact: true })}</span>
+          <span className="num font-display text-xl font-black tracking-[-0.03em] text-text-primary">{formatCurrency(shown ? shown.total : total, currency, { compact: true })}</span>
           {shown && <span className="text-[11px] text-text-secondary">{formatPercent(shown.share)}</span>}
         </div>
       </div>
@@ -60,7 +60,7 @@ export function CategoryDonut({ data, currency, centerLabel = 'Spent' }: { data:
             key={s.id}
             onMouseEnter={() => setActive(i)}
             onMouseLeave={() => setActive(null)}
-            className="flex items-center gap-3 rounded-full px-2 py-1.5 transition-colors hover:bg-surface-2"
+            className="flex items-center gap-3 rounded-full px-2 py-1.5 transition-colors hover:bg-surface-3"
           >
             <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
             <CategoryIcon icon={s.icon} color={s.color} size="xs" />

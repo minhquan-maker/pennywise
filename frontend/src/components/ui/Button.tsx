@@ -14,15 +14,16 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants: Record<ButtonVariant, string> = {
-  primary:
-    'bg-primary-500 text-forest hover:bg-primary-400 shadow-[0_0_0_0_rgba(61,217,160,0)] hover:shadow-[0_8px_30px_-6px_rgba(61,217,160,0.55)]',
-  secondary: 'bg-surface-3 text-text-primary hover:bg-line-strong',
-  outline: 'border border-line-strong text-text-primary hover:border-primary-500 hover:text-primary-400',
+  // Lime fill + forest ink: the one "do this next" action per view
+  primary: 'bg-primary-500 text-forest hover:bg-primary-600',
+  secondary: 'bg-surface-3 text-forest hover:bg-line-strong/70',
+  outline: 'border border-forest bg-surface text-forest hover:bg-primary-100',
   ghost: 'text-text-secondary hover:bg-surface-3 hover:text-text-primary',
   danger: 'bg-danger-500 text-white hover:bg-danger-600',
-  soft: 'bg-primary-500/12 text-primary-400 hover:bg-primary-500/20',
-  light: 'bg-cream text-forest hover:bg-white',
-  dark: 'bg-forest text-white hover:bg-surface-3',
+  soft: 'bg-primary-100 text-forest hover:bg-primary-200',
+  // For forest sections
+  light: 'bg-white text-forest hover:bg-primary-100',
+  dark: 'bg-forest text-white hover:bg-forest/90',
 }
 
 const sizes = {
@@ -43,8 +44,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       type={type}
       disabled={disabled || isLoading}
       className={cn(
-        'inline-flex select-none items-center justify-center whitespace-nowrap rounded-full font-semibold tracking-[-0.01em]',
-        'transition-all duration-200 ease-out active:scale-[0.97]',
+        'inline-flex select-none items-center justify-center whitespace-nowrap rounded-full font-semibold tracking-[-0.011em]',
+        'transition-colors duration-150 ease-out active:scale-[0.97]',
         'disabled:pointer-events-none disabled:opacity-45',
         variants[variant],
         iconOnly ? cn(iconOnlySizes[size], 'p-0') : sizes[size],

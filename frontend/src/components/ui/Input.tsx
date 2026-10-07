@@ -10,9 +10,9 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const fieldClass =
-  'block w-full h-12 rounded-[var(--radius-md)] border border-line bg-surface-2 px-4 text-[15px] text-text-primary ' +
+  'block w-full h-12 rounded-[var(--radius-md)] border border-pebble bg-surface px-4 text-[15px] text-text-primary ' +
   'placeholder:text-text-tertiary transition-colors duration-150 ' +
-  'hover:border-line-strong focus:border-primary-500 focus:outline-none focus:ring-4 focus:ring-primary-500/10 ' +
+  'hover:border-text-secondary focus:border-forest focus:outline-none focus:ring-1 focus:ring-forest ' +
   'disabled:cursor-not-allowed disabled:opacity-50'
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
@@ -22,7 +22,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="space-y-1.5">
         {label && (
-          <label htmlFor={inputId} className="block text-[13px] font-medium text-text-secondary">
+          <label htmlFor={inputId} className="block text-[13px] font-semibold text-text-secondary">
             {label}
           </label>
         )}
@@ -35,7 +35,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             className={cn(
               fieldClass,
-              error && 'border-danger-500 focus:border-danger-500 focus:ring-danger-500/10',
+              error && 'border-danger-500 focus:border-danger-500 focus:ring-danger-500',
               leftIcon && 'pl-11',
               rightSlot && 'pr-12',
               className

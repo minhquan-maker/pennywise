@@ -80,7 +80,7 @@ export function AnalyticsPage() {
           {trendLoading ? <Skeleton className="h-64 w-full" /> : <CashflowChart data={trend} currency={currency} />}
         </Card>
 
-        <Card variant="glow" className="lg:col-span-2">
+        <Card variant="fog" className="lg:col-span-2">
           <CardHeader
             title="Next month forecast"
             subtitle={prediction ? formatMonth(prediction.month) : undefined}
@@ -95,7 +95,7 @@ export function AnalyticsPage() {
             <>
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <span className="display num text-5xl text-text-primary">{fmt(prediction.predicted)}</span>
-                <span className={cn('text-sm font-semibold', prediction.trendPercent > 0 ? 'text-warning-500' : 'text-primary-400')}>
+                <span className={cn('text-sm font-semibold', prediction.trendPercent > 0 ? 'text-warning-500' : 'text-positive')}>
                   {prediction.trendPercent > 0 ? '↗' : '↘'} {Math.abs(prediction.trendPercent)}%/mo trend
                 </span>
               </div>
@@ -135,14 +135,14 @@ export function AnalyticsPage() {
                         <span className="truncate text-sm text-text-primary">{c.name}</span>
                         <span className="num text-sm font-semibold text-text-primary">{fmt(c.total)}</span>
                       </div>
-                      <div className="h-1.5 rounded-full bg-surface-3">
+                      <div className="h-2 rounded-full bg-surface-3">
                         <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${c.share * 100}%`, backgroundColor: c.color }} />
                       </div>
                     </div>
                     <span
                       className={cn(
                         'num w-14 flex-shrink-0 text-right text-xs font-semibold',
-                        delta === null ? 'text-text-tertiary' : delta > 0.05 ? 'text-warning-500' : delta < -0.05 ? 'text-primary-400' : 'text-text-tertiary'
+                        delta === null ? 'text-text-tertiary' : delta > 0.05 ? 'text-warning-500' : delta < -0.05 ? 'text-positive' : 'text-text-tertiary'
                       )}
                       title="vs previous month"
                     >

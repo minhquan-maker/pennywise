@@ -11,7 +11,7 @@ interface BadgeProps {
   dot?: boolean
 }
 
-export function Badge({ icon, label, color = 'var(--color-primary-500)', className, size = 'md', dot }: BadgeProps) {
+export function Badge({ icon, label, color = 'var(--color-positive)', className, size = 'md', dot }: BadgeProps) {
   return (
     <span
       className={cn(

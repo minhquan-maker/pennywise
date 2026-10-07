@@ -54,6 +54,7 @@ uppercase display type, pill buttons, glowing ring "orb", big rounded cards, cre
 
 ### Frontend
 1. New token-based theme (graphite + mint; first iteration was forest/neon, toned down after feedback), Anton display + Inter, grain + glow utilities, reveal-on-scroll.
+   Superseded in Oct 2026 by a Wise-inspired light theme: white canvas, Forest Ink sections, Lime Voltage fills, Inter Tight 900 display, flat surfaces.
 2. Rebuilt UI kit: pill buttons, cards, bottom-sheet modal on mobile, confirm dialog, segmented control,
    month stepper, glow orb, progress ring, empty states.
 3. App shell: sidebar on desktop, iOS-style bottom tab bar with central add button on mobile.

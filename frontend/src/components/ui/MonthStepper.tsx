@@ -6,12 +6,12 @@ export function MonthStepper({ value, onChange, className }: { value: string; on
   const current = getCurrentMonth()
   const atLatest = value >= current
   return (
-    <div className={cn('inline-flex items-center rounded-full border border-line bg-surface-2 p-1', className)}>
+    <div className={cn('inline-flex items-center rounded-full bg-surface-3 p-1', className)}>
       <button
         type="button"
         onClick={() => onChange(addMonths(value, -1))}
         aria-label="Previous month"
-        className="flex h-8 w-8 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
+        className="flex h-8 w-8 items-center justify-center rounded-full text-forest transition-colors hover:bg-surface"
       >
         <ChevronLeft className="h-4 w-4" />
       </button>
@@ -19,7 +19,7 @@ export function MonthStepper({ value, onChange, className }: { value: string; on
         type="button"
         onClick={() => onChange(current)}
         title="Jump to this month"
-        className="min-w-[8.5rem] px-2 text-center text-[13px] font-semibold text-text-primary"
+        className="min-w-[8.5rem] px-2 text-center text-[13px] font-semibold text-forest"
       >
         {formatMonth(value)}
       </button>
@@ -28,7 +28,7 @@ export function MonthStepper({ value, onChange, className }: { value: string; on
         onClick={() => onChange(addMonths(value, 1))}
         disabled={atLatest}
         aria-label="Next month"
-        className="flex h-8 w-8 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary disabled:opacity-30 disabled:hover:bg-transparent"
+        className="flex h-8 w-8 items-center justify-center rounded-full text-forest transition-colors hover:bg-surface disabled:opacity-30 disabled:hover:bg-transparent"
       >
         <ChevronRight className="h-4 w-4" />
       </button>

@@ -28,7 +28,7 @@ import {
 import type { BudgetStatus, BudgetSuggestion } from '@/types'
 
 const STATUS = {
-  ok: { label: 'On track', color: 'var(--color-primary-500)' },
+  ok: { label: 'On track', color: 'var(--color-positive)' },
   warning: { label: 'At risk', color: 'var(--color-warning-500)' },
   over: { label: 'Over', color: 'var(--color-danger-500)' },
 }
@@ -121,37 +121,37 @@ export function BudgetPage() {
       {isLoading ? (
         <Skeleton className="h-44 w-full rounded-[var(--radius-2xl)]" />
       ) : items.length > 0 && d ? (
-        <Card variant="glow" padding="lg" className="grain overflow-hidden">
+        <Card variant="forest" padding="lg" className="overflow-hidden">
           <div className="grid gap-6 md:grid-cols-[1.4fr_1fr] md:items-center">
-            <div>
-              <p className="eyebrow">{formatMonth(month)} · {items.length} budgets</p>
-              <p className="display num mt-2 text-5xl text-text-primary sm:text-6xl">
+            <div className="min-w-0">
+              <p className="eyebrow text-primary-500">{formatMonth(month)} · {items.length} budgets</p>
+              <p className="display num mt-3 text-[clamp(2.25rem,8vw,4rem)] text-white">
                 {fmt(d.budget.spent)}
-                <span className="ml-2 align-middle font-sans text-base font-medium normal-case text-text-tertiary">of {fmt(totalBudget)}</span>
+                <span className="ml-2 align-middle font-sans text-base font-medium normal-case tracking-normal text-white/60">of {fmt(totalBudget)}</span>
               </p>
-              <ProgressBar value={usage} pace={pace} className="mt-5 h-3" />
-              <div className="mt-2 flex justify-between text-xs text-text-tertiary">
+              <ProgressBar value={usage} pace={pace} color="var(--color-primary-500)" className="mt-5 h-3 bg-white/15 [&>span]:ring-forest [&>span]:bg-white" />
+              <div className="mt-2 flex justify-between text-xs text-white/60">
                 <span>{formatPercent(usage)} used</span>
                 {pace !== undefined && <span>Day {d.elapsedDays} of {d.daysInMonth}</span>}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-[var(--radius-lg)] border border-line bg-bg/40 p-4">
-                <p className="text-xs text-text-tertiary">Remaining</p>
-                <p className={cn('num mt-1 text-xl font-bold', d.budget.remaining < 0 ? 'text-danger-400' : 'text-text-primary')}>{fmt(d.budget.remaining)}</p>
+              <div className="rounded-[var(--radius-lg)] bg-surface p-4">
+                <p className="text-xs font-semibold text-text-tertiary">Remaining</p>
+                <p className={cn('num mt-1 font-display text-xl font-black tracking-[-0.03em]', d.budget.remaining < 0 ? 'text-danger-500' : 'text-forest')}>{fmt(d.budget.remaining)}</p>
               </div>
-              <div className="rounded-[var(--radius-lg)] border border-line bg-bg/40 p-4">
-                <p className="text-xs text-text-tertiary">{isCurrent ? 'Safe per day' : 'Result'}</p>
-                <p className="num mt-1 text-xl font-bold text-primary-400">
+              <div className="rounded-[var(--radius-lg)] bg-surface p-4">
+                <p className="text-xs font-semibold text-text-tertiary">{isCurrent ? 'Safe per day' : 'Result'}</p>
+                <p className="num mt-1 font-display text-xl font-black tracking-[-0.03em] text-forest">
                   {isCurrent ? fmt(d.budget.safePerDay) : d.budget.remaining >= 0 ? 'Under' : 'Over'}
                 </p>
               </div>
               {isCurrent && (
-                <div className="col-span-2 flex items-center gap-3 rounded-[var(--radius-lg)] border border-line bg-bg/40 p-4">
-                  <CalendarClock className="h-5 w-5 flex-shrink-0 text-text-tertiary" />
-                  <p className="text-xs leading-relaxed text-text-secondary">
+                <div className="col-span-2 flex items-center gap-3 rounded-[var(--radius-lg)] bg-white/10 p-4">
+                  <CalendarClock className="h-5 w-5 flex-shrink-0 text-primary-500" />
+                  <p className="text-xs leading-relaxed text-white/75">
                     Budgeted categories are projected to finish at{' '}
-                    <strong className="num text-text-primary">{fmt(items.reduce((s, b) => s + Math.max(b.projected, b.spent), 0))}</strong>{' '}
+                    <strong className="num text-white">{fmt(items.reduce((s, b) => s + Math.max(b.projected, b.spent), 0))}</strong>{' '}
                     by month end.
                   </p>
                 </div>
@@ -202,13 +202,13 @@ export function BudgetPage() {
                   </div>
                   <Badge label={st.label} color={st.color} size="sm" dot />
                 </div>
-                <p className="num mt-5 text-2xl font-bold text-text-primary">
+                <p className="num mt-5 font-display text-[26px] font-black tracking-[-0.03em] text-text-primary">
                   {fmt(b.spent)}
                   <span className="ml-1.5 text-xs font-medium text-text-tertiary">{formatPercent(b.pct)}</span>
                 </p>
                 <ProgressBar value={b.pct} color={b.status === 'warning' ? 'var(--color-warning-500)' : undefined} pace={pace} className="mt-3" />
                 <div className="mt-3 flex items-center justify-between text-xs">
-                  <span className={b.remaining < 0 ? 'text-danger-400' : 'text-text-secondary'}>
+                  <span className={b.remaining < 0 ? 'font-semibold text-danger-500' : 'text-text-secondary'}>
                     {b.remaining < 0 ? `${fmt(-b.remaining)} over` : `${fmt(b.remaining)} left`}
                   </span>
                   {isCurrent && b.projected > b.spent && (
@@ -248,7 +248,7 @@ export function BudgetPage() {
           <Button variant="ghost" size="sm" icon={<Copy className="h-4 w-4" />} isLoading={copy.isPending} onClick={() => copy.mutate(month)}>
             Copy missing from last month
           </Button>
-          <Button variant="ghost" size="sm" className="hover:!bg-danger-500/12 hover:!text-danger-400" icon={<Trash2 className="h-4 w-4" />} onClick={() => setConfirmClear(true)}>
+          <Button variant="ghost" size="sm" className="hover:!bg-danger-500/10 hover:!text-danger-500" icon={<Trash2 className="h-4 w-4" />} onClick={() => setConfirmClear(true)}>
             Clear month
           </Button>
         </div>
@@ -267,7 +267,7 @@ export function BudgetPage() {
                 variant="ghost"
                 iconOnly
                 aria-label="Delete budget"
-                className="hover:!bg-danger-500/12 hover:!text-danger-400"
+                className="hover:!bg-danger-500/10 hover:!text-danger-500"
                 icon={<Trash2 className="h-4 w-4" />}
                 isLoading={remove.isPending}
                 onClick={() => remove.mutate(editor.budget!.id, { onSuccess: closeEditor })}
@@ -285,7 +285,7 @@ export function BudgetPage() {
         <form onSubmit={saveBudget} className="space-y-5">
           {!editor.budget && (
             <div>
-              <p className="mb-2.5 text-[13px] font-medium text-text-secondary">Category</p>
+              <p className="mb-2.5 text-[13px] font-semibold text-text-secondary">Category</p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {expenseCats.map((c) => {
                   const taken = budgeted.has(c.id)
@@ -297,7 +297,7 @@ export function BudgetPage() {
                       onClick={() => setEditor((e) => ({ ...e, categoryId: c.id }))}
                       className={cn(
                         'flex items-center gap-2 rounded-[var(--radius-md)] border px-3 py-2.5 text-left text-sm transition-all disabled:opacity-35',
-                        editor.categoryId === c.id ? 'border-primary-500 bg-primary-500/10 text-text-primary' : 'border-line bg-surface-2 text-text-secondary hover:border-line-strong'
+                        editor.categoryId === c.id ? 'border-forest bg-primary-100 font-semibold text-forest ring-1 ring-forest' : 'border-line bg-surface text-text-secondary hover:border-forest/40'
                       )}
                     >
                       <CategoryIcon icon={c.icon} color={c.color} size="xs" />
@@ -309,7 +309,7 @@ export function BudgetPage() {
             </div>
           )}
           <div>
-            <label htmlFor="budget-amount" className="mb-2.5 block text-[13px] font-medium text-text-secondary">
+            <label htmlFor="budget-amount" className="mb-2.5 block text-[13px] font-semibold text-text-secondary">
               Monthly limit
             </label>
             <div className="relative">
@@ -367,14 +367,14 @@ export function BudgetPage() {
               return (
                 <li
                   key={s.categoryId}
-                  className={cn('rounded-[var(--radius-lg)] border p-3.5 transition-colors', pick.on ? 'border-primary-500/50 bg-primary-500/5' : 'border-line bg-surface-2/50')}
+                  className={cn('rounded-[var(--radius-lg)] border p-3.5 transition-colors', pick.on ? 'border-forest/40 bg-primary-50' : 'border-line bg-surface')}
                 >
                   <div className="flex items-center gap-3">
                     <input
                       type="checkbox"
                       checked={pick.on}
                       onChange={(e) => setReview((r) => ({ ...r, picks: { ...r.picks, [s.categoryId]: { ...pick, on: e.target.checked } } }))}
-                      className="h-4 w-4 flex-shrink-0 accent-[#3dd9a0]"
+                      className="h-4 w-4 flex-shrink-0 accent-forest"
                       aria-label={`Apply ${s.category}`}
                     />
                     {cat && <CategoryIcon icon={cat.icon} color={cat.color} size="sm" />}
